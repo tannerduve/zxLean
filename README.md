@@ -59,9 +59,11 @@ This is an active research project. Current implementation includes:
 - Tensor product of linear maps
 - Additional rules (bialgebra, Euler decomposition, Hopf)
 - Soundness proof (rewrite rules preserve semantics)
+- Better diagram-like notation
 
 **Planned:**
 - Completeness results
+
 
 ## Building
 
