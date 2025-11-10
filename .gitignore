@@ -3,4 +3,3 @@
 /build
 *.olean
 .DS_Store
-lake-manifest.json
