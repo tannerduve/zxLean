@@ -2,6 +2,10 @@ import Mathlib.Data.Rat.Defs
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Angle
 open Real
 
+/--
+Syntax for the generators of the zx-calculus, represented as an inductive (enum) type indexed by
+the number of input and output wires
+-/
 inductive Generator : ℕ → ℕ → Type
 | empty : Generator 0 0 -- the empty diagram
 | id    :  Generator 1 1 -- the identity generator
@@ -29,6 +33,8 @@ infixl:80 " ⊗ " => ZxTerm.tens  -- Tensor product
 
 namespace ZxTerm
 
+-- Smart constructors
+
 def empty : ZxTerm 0 0 := ZxTerm.gen Generator.empty
 
 def id : ZxTerm 1 1 := ZxTerm.gen Generator.id
@@ -50,11 +56,10 @@ end ZxTerm
 open ZxTerm
 
 -- Define the dagger (adjoint) of a ZX term
--- Marked noncomputable because Real.Angle arithmetic isnt computable
--- This function can be used in proofs but can not evaluate as a program
--- If we need to compute with this later we can replace Real.Angle with ℝ or ℚ
--- and lose some mathematical precision
-noncomputable def dagger {n m : ℕ} : ZxTerm n m → ZxTerm m n
+-- Currently we use real numbers for phases
+-- To be more mathematically precise we would use `Real.Angle` but this is noncomputable
+-- (ie. usable for proofs but can't execute the code)
+def dagger {n m : ℕ} : ZxTerm n m → ZxTerm m n
 | .gen g => match g with
   | .empty         => ZxTerm.gen Generator.empty
   | .id            => ZxTerm.gen Generator.id
@@ -68,7 +73,7 @@ noncomputable def dagger {n m : ℕ} : ZxTerm n m → ZxTerm m n
 | f ⊗ g  => dagger f ⊗ dagger g
 
 
--- Trying non-dependent AST with separate type system
+-- Trying non-dependent AST with separate type system. Will prob deprecate
 
 inductive Generator' : Type
 | empty : Generator'
