@@ -284,7 +284,6 @@ def interpGen {n m : ℕ} (g : Generator n m) : LinMap n m :=
 /--
 Recursively interpret a composite ZX diagram as a matrix.
 
-The interpretation is homomorphic with respect to the diagram structure:
 * Generators are interpreted via `interpGen`
 * Sequential composition (`;`) becomes matrix multiplication
 * Parallel composition (`⊗`) becomes Kronecker product (tensor product)
