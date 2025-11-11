@@ -1,106 +1,58 @@
-import ZxCalculus.AST
+import Mathlib.LinearAlgebra.Matrix.Kronecker
 import Mathlib.Data.Complex.Basic
-import Mathlib.LinearAlgebra.FiniteDimensional.Basic
-import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.Analysis.InnerProductSpace.Basic
-import Mathlib.Tactic.Cases
-import Mathlib.Analysis.Normed.Lp.PiLp
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.LinearAlgebra.TensorProduct.Basic
+import ZxCalculus.AST
 
-attribute [local simp] add_assoc add_comm mul_assoc mul_add add_mul
+open Matrix Complex
 
-/-!
-# Denotational Semantics for ZX-Calculus
+/-- The space of n qubits is represented as 2^n × 1 column vectors -/
+abbrev Qubits (n : ℕ) := Matrix (Fin (2^n)) (Fin 1) ℂ
 
-This file defines the interpretation of ZX diagrams as linear maps between
-finite-dimensional complex Hilbert spaces. An n-wire diagram denotes a linear
-map ℂ^(2^n) → ℂ^(2^m), representing quantum operations on n qubits.
-
-## Main Definitions
-
-- `Qubits n`: The Hilbert space ℂ^(2^n) for n qubits
-- `LinMap n m`: Linear maps from n-qubit space to m-qubit space
-- `ket`/`bra`: Quantum state vectors and dual vectors
-- `decompose`/`recompose`: Index manipulation for tensor product spaces
-- `interpGen`: Interpretation of ZX generators as linear maps
-- `interp`: Interpretation of composite ZX diagrams
-
-## Implementation Notes
-
-All definitions are noncomputable as they involve complex numbers and
-infinite-dimensional constructions. The interpretation uses Mathlib's
-`PiLp` type for L²-spaces with the standard inner product.
-
-`sorry`'s are placeholders for incomplete definitions/proofs
--/
-
-open Complex ComplexConjugate InnerProductSpace
-
-/-- The Hilbert space for n qubits: ℂ^(2^n) with L² norm -/
-abbrev Qubits (n : ℕ) := PiLp 2 (fun _ : Fin (2^n) => ℂ)
-
-/-- Linear maps between qubit spaces -/
-abbrev LinMap (n m : ℕ) := Qubits n →ₗ[ℂ] Qubits m
+/-- Linear maps between qubit spaces are matrices -/
+abbrev LinMap (n m : ℕ) := Matrix (Fin (2^m)) (Fin (2^n)) ℂ
 
 noncomputable section
 
-/-- Ket: embeds a quantum state as a linear map from the scalar space -/
-def ket {n : ℕ} (a : Qubits n) : Qubits 0 →ₗ[ℂ] Qubits n := {
-  toFun := fun s => s 0 • a
-  map_add' := by intros; simp [add_smul]
-  map_smul' := by intros; simp [smul_smul]
-}
+/-- The swap matrix for 2 qubits (4×4) -/
+def swap_2x2 : Matrix (Fin 4) (Fin 4) ℂ :=
+  ![![1, 0, 0, 0],
+    ![0, 0, 1, 0],
+    ![0, 1, 0, 0],
+    ![0, 0, 0, 1]]
 
-/-- Bra: dual of a quantum state, maps states to their inner product -/
-def bra {n : ℕ} (a : Qubits n) : Qubits n →ₗ[ℂ] Qubits 0 := {
-  toFun := fun b => (WithLp.equiv 2 _).symm (fun _ => inner ℂ a b)
-  map_add' := by intros; ext; simp [inner_add_right]
-  map_smul' := by intros; ext; simp [inner_smul_right]
-}
+/-- General swap for n and m qubits -/
+def swap_gen (n m : ℕ) : LinMap (n + m) (m + n) :=
+  Matrix.of fun (i : Fin (2^(m+n))) (j : Fin (2^(n+m))) =>
+    let m_out := i.val / (2^n)
+    let n_out := i.val % (2^n)
+    let n_in := j.val / (2^m)
+    let m_in := j.val % (2^m)
+    if m_out = m_in && n_out = n_in then 1 else 0
 
-/-- Decompose a tensor product index Fin(2^(n+m)) into (Fin(2^n), Fin(2^m)) -/
-def decompose {n m : ℕ} (i : Fin (2 ^ (n + m))) : Fin (2 ^ n) × Fin (2 ^ m) :=
-  have h : 2 ^ (n + m) = 2 ^ n * 2 ^ m := by ring_nf
-  let first := i.val / (2 ^ m)
-  let second := i.val % (2 ^ m)
-  (⟨first, sorry⟩, ⟨second, sorry⟩)
+/-- Ket: column vector -/
+def ket {n : ℕ} (v : Qubits n) : LinMap 0 n := v
 
-/-- Recompose tensor product indices back into a single index -/
-def recompose {n m : ℕ} (j : Fin (2 ^ m)) (i : Fin (2 ^ n)) : Fin (2 ^ (m + n)) :=
-  have h : 2 ^ (m + n) = 2 ^ m * 2 ^ n := by ring_nf
-  ⟨j.val * (2 ^ n) + i.val, sorry⟩
+/-- Bra: row vector (conjugate transpose) -/
+def bra {n : ℕ} (v : Qubits n) : LinMap n 0 := vᴴ
 
-/-- Swap operation: permutes tensor factors (n qubits) ⊗ (m qubits) → (m qubits) ⊗ (n qubits) -/
-def swap_gen (n m : ℕ) : LinMap (n + m) (m + n) := {
-  toFun := fun ψ =>
-    WithLp.equiv 2 _ |>.symm fun i =>
-      let i' : Fin (2 ^ (n + m)) := i.cast (by ring_nf)
-      let (j, k) := decompose i'
-      WithLp.equiv 2 _ ψ (recompose j k)
-  map_add' := sorry
-  map_smul' := sorry
-}
-
-/-- Interpret ZX generators as linear maps -/
+/-- Interpret ZX generators as matrices -/
 def interpGen {n m : ℕ} (g : Generator n m) : LinMap n m :=
-match g with
-  | .empty => LinearMap.id
-  | .id => LinearMap.id
+  match g with
+  | .empty => 1  -- 1×1 identity
+  | .id => 1     -- 2×2 identity
   | .swap n m => swap_gen n m
-  | _ => sorry  -- TODO: H, Z, X spiders, cup, cap
+  | .H => ((1:ℂ)/√2) • ![![1, 1],
+                       ![1, -1]]  -- Hadamard
+  | .Z α n m => sorry -- Z spider
+  | .X α n m => sorry -- X spider
+  | .cup => sorry     -- Bell state
+  | .cap => sorry     -- Bell effect
 
-/-- Interpret ZX diagrams as linear maps via structural recursion -/
-def interp {n m : ℕ} : ZxTerm n m → (LinMap n m)
+/-- Interpret ZX diagrams as matrices -/
+def interp {n m : ℕ} : ZxTerm n m → LinMap n m
   | .gen g => interpGen g
-  | f ; g =>
-      let φf := interp f
-      let φg  := interp g
-      LinearMap.comp φg φf
+  | f ; g => interp g * interp f  -- Matrix multiplication
   | f ⊗ g =>
-    let φf := interp f
-    let φg  := interp g
-    -- TODO - define tensor product in our normed space
-    sorry
-end
+    Matrix.of fun i j =>
+      let i_prod := finProdFinEquiv.symm (i.cast (by ring))
+      let j_prod := finProdFinEquiv.symm (j.cast (by ring))
+      kronecker (interp f) (interp g) i_prod j_prod
