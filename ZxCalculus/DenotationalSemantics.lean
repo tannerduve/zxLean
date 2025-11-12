@@ -261,8 +261,8 @@ Each generator is mapped to its corresponding linear map:
 * `id`: 2×2 identity wire
 * `swap n m`: Permutation matrix swapping n and m qubit subsystems
 * `H`: Hadamard gate as |+⟩⟨0| + |-⟩⟨1|
-* `Z α n m`: Z-spider with phase α*π (TODO: implement)
-* `X α n m`: X-spider with phase α*π (TODO: implement)
+* `Z α n m`: Z-spider |0⟩^⊗m ⟨0|^⊗n + e^(iαπ) |1⟩^⊗m ⟨1|^⊗n
+* `X α n m`: X-spider |+⟩^⊗m ⟨+|^⊗n + e^(iαπ) |-⟩^⊗m ⟨-|^⊗n
 * `cup`: Bell state |00⟩ + |11⟩
 * `cap`: Bell effect ⟨00| + ⟨11|
 -/
@@ -272,14 +272,12 @@ def interpGen {n m : ℕ} (g : Generator n m) : LinMap n m :=
   | .id => 1     -- 2×2 identity wire
   | .swap n m => swap_gen n m
   | .H => ketPlus * bra0 + ketMinus * bra1  -- |+⟩⟨0| + |-⟩⟨1|
-  | .Z α n m =>
-    -- Z spider with phase α*π (α is rational multiple of π)
+  | .Z α n m => -- Z spider with phase α*π (α is rational multiple of π)
     let phase := (α : ℝ) * π
-    sorry
-  | .X α n m =>
-    -- X spider with phase α*π (α is rational multiple of π)
+    ((pow_tens ket0 m) * (pow_tens ket0 n)ᴴ) + (Complex.exp (Complex.I * phase) • ((pow_tens ket1 m) * (pow_tens ket1 n)ᴴ))
+  | .X α n m => -- X spider with phase α*π (α is rational multiple of π)
     let phase := (α : ℝ) * π
-    sorry
+    ((pow_tens ketPlus m) * (pow_tens ketPlus n)ᴴ) + (Complex.exp (Complex.I * phase) • ((pow_tens ketMinus m) * (pow_tens ketMinus n)ᴴ))
   | .cup => ket00 + ket11  -- Bell state (|00⟩ + |11⟩)
   | .cap => bra00 + bra11  -- Bell effect (⟨00| + ⟨11|)
 
