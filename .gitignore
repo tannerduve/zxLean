@@ -15,3 +15,4 @@ lake-packages/
 *.swo
 *~
 
+*.DS_Store
