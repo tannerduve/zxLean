@@ -1,0 +1,14 @@
+[project]
+name = "theoros"
+version = "0.1.0"
+description = "Aristotle theorem prover with progress tracking and logging"
+requires-python = ">=3.10"
+dependencies = [
+    "aristotlelib>=0.4.3",
+    "tqdm>=4.66.0",
+    "rich>=13.0.0",
+]
+
+[project.scripts]
+theoros = "theoros:main"
+
