@@ -20,3 +20,8 @@ name = "ZxCalculus"
 
 [[lean_lib]]
 name = "tests"
+
+[[require]]
+name = "Parser"
+git = "https://github.com/fgdorais/lean4-parser"
+rev = "9cfe6f912bbb5ce5ad1e06d1b58a30bddae82e63"
