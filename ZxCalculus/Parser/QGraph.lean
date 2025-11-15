@@ -19,11 +19,15 @@ Example .qgraph structure:
   "inputs": [0, 1],
   "outputs": [5, 6],
   "vertices": [
-    {"id": 0, "t": 0, "pos": [0, 0]},  // t=0: boundary
+    {"id": 0, "t": 0, "pos": [0, 0]},  // t=0: boundary (input)
+    {"id": 1, "t": 0, "pos": [0, 1]},  // t=0: boundary (input)
     {"id": 2, "t": 1, "pos": [1, 0], "phase": "0"},  // t=1: Z spider
-    {"id": 3, "t": 2, "pos": [2, 1], "phase": "0"}   // t=2: X spider
+    {"id": 3, "t": 2, "pos": [1, 1], "phase": "0"},  // t=2: X spider
+    {"id": 5, "t": 0, "pos": [2, 0]},  // t=0: boundary (output)
+    {"id": 6, "t": 0, "pos": [2, 1]}   // t=0: boundary (output)
   ],
-  "edges": [[0, 2, 2], [1, 3, 1], ...]  // [src, tgt, edgeType]
+  "edges": [[0, 2, 1], [1, 3, 1], [2, 5, 1], [3, 6, 1]]
+  // [src, tgt, edgeType]: 1=simple, 2=hadamard
 }
 ```
 
@@ -86,12 +90,6 @@ structure QGraphData where
   deriving Repr
 
 /-! ## JSON Parsing Functions -/
-
-/-- Helper: Convert Option to Except with error message -/
-def optionToExcept {α : Type} (o : Option α) (errMsg : String) : Except String α :=
-  match o with
-  | some a => .ok a
-  | none => .error errMsg
 
 /-- Parse vertex type from integer code -/
 def parseVertexType (t : Int) : Except String QGraphVertexType :=
@@ -296,11 +294,21 @@ structure SerializerState where
 /-- Serializer monad for stateful graph construction -/
 abbrev SerializerM := StateM SerializerState
 
+private def getInputWires : SerializerM (Array Nat) :=
+  (·.inputWires) <$> get
+
+private def getOutputWires : SerializerM (Array Nat) :=
+  (·.outputWires) <$> get
+
+private def setInputWires (wires : Array Nat) : SerializerM Unit :=
+  modify fun s => { s with inputWires := wires }
+
+private def setOutputWires (wires : Array Nat) : SerializerM Unit :=
+  modify fun s => { s with outputWires := wires }
+
 /-- Allocate a new vertex ID -/
-def allocVertexId : SerializerM Nat := do
-  let s ← get
-  set { s with nextId := s.nextId + 1 }
-  return s.nextId
+def allocVertexId : SerializerM Nat :=
+  modifyGet fun s => (s.nextId, { s with nextId := s.nextId + 1 })
 
 /-- Add a vertex to the graph -/
 def addVertex (v : QGraphVertex) : SerializerM Unit := do
@@ -310,62 +318,57 @@ def addVertex (v : QGraphVertex) : SerializerM Unit := do
 def addEdge (e : QGraphEdge) : SerializerM Unit := do
   modify fun s => { s with edges := s.edges.push e }
 
-/-- Create boundary vertices for inputs -/
-def createInputBoundaries (n : Nat) : SerializerM (Array Nat) := do
-  let mut ids : Array Nat := #[]
-  for i in [0:n] do
+/-- Create n boundary vertices at column z -/
+def createBoundaries (n : ℕ) (z : ℤ) : SerializerM (Array Nat) := do
+  ((List.range n).map fun i => (i : Int)).toArray.mapM fun i => do
     let vid ← allocVertexId
     addVertex {
       id := vid,
       vtype := .boundary,
       phase := 0,
-      pos := some (0, i)  -- Left column
+      pos := some (z, i)
     }
-    ids := ids.push vid
-  return ids
-
-/-- Create boundary vertices for outputs -/
-def createOutputBoundaries (m : Nat) (col : Int) : SerializerM (Array Nat) := do
-  let mut ids : Array Nat := #[]
-  for i in [0:m] do
-    let vid ← allocVertexId
-    addVertex {
-      id := vid,
-      vtype := .boundary,
-      phase := 0,
-      pos := some (col, i)  -- Right column
-    }
-    ids := ids.push vid
-  return ids
+    return vid
 
 /-- Convert rational phase to string for .qgraph format -/
-def phaseToString (r : Rat) : String :=
+def phaseToString (r : ℚ) : String :=
   if r.den == 1 then
     toString r.num
   else
     s!"{r.num}/{r.den}"
 
+private def createSpider (vtype : QGraphVertexType) (α : Rat) (n m : Nat)
+    (col : Int) (startQubit : Int) : SerializerM Unit := do
+  let inputWires ← getInputWires
+  let vid ← allocVertexId
+  addVertex {
+    id := vid,
+    vtype := vtype,
+    phase := α,
+    pos := some (col, startQubit + (n / 2))
+  }
+  -- Connect input wires to spider
+  (inputWires.toList.take n).forM fun src =>
+    addEdge { src := src, tgt := vid, etype := .simple }
+  -- All outputs connect from this spider
+  setOutputWires (Array.replicate m vid)
+
 /-- Serialize a generator at a specific position -/
 def serializeGenerator {n m : Nat} (g : Generator n m) (col : Int) (startQubit : Int) : SerializerM Unit := do
-  let inputWires ← get <&> (·.inputWires)
+  let inputWires ← getInputWires
 
   match g with
   | .empty =>
     -- Empty diagram - no vertices, no wires
-    modify fun s => { s with inputWires := #[], outputWires := #[] }
+    setInputWires #[]
+    setOutputWires #[]
 
-  | .id =>
-    -- Identity - wire passes through
-    if h : inputWires.size = 1 then
-      modify fun s => { s with outputWires := inputWires }
-    else
-      -- Should not happen if types are correct
-      modify fun s => { s with outputWires := inputWires }
+  | .id => setOutputWires inputWires
 
   | .swap n m =>
     -- Swap wires - reverse the order
     let swapped := inputWires.reverse
-    modify fun s => { s with outputWires := swapped }
+    setOutputWires swapped
 
   | .H =>
     -- Hadamard gate: In PyZX, this is represented as a Z-spider with a Hadamard edge
@@ -381,49 +384,14 @@ def serializeGenerator {n m : Nat} (g : Generator n m) (col : Int) (startQubit :
     if h : inputWires.size ≥ 1 then
       addEdge { src := inputWires[0], tgt := vid, etype := .hadamard }
     -- Output is the Z-spider
-    modify fun s => { s with outputWires := #[vid] }
-
-  | .Z α n m =>
-    -- Z spider
-    let vid ← allocVertexId
-    addVertex {
-      id := vid,
-      vtype := .z,
-      phase := α,
-      pos := some (col, startQubit + (n / 2))  -- Center vertically
-    }
-    -- Connect all input wires
-    for i in [0:min n inputWires.size] do
-      if h : i < inputWires.size then
-        addEdge { src := inputWires[i], tgt := vid, etype := .simple }
-    -- Outputs all connect from this spider
-    let mut outWires : Array Nat := #[]
-    for _ in [0:m] do
-      outWires := outWires.push vid
-    modify fun s => { s with outputWires := outWires }
-
-  | .X α n m =>
-    -- X spider (similar to Z)
-    let vid ← allocVertexId
-    addVertex {
-      id := vid,
-      vtype := .x,
-      phase := α,
-      pos := some (col, startQubit + (n / 2))
-    }
-    for i in [0:min n inputWires.size] do
-      if h : i < inputWires.size then
-        addEdge { src := inputWires[i], tgt := vid, etype := .simple }
-    let mut outWires : Array Nat := #[]
-    for _ in [0:m] do
-      outWires := outWires.push vid
-    modify fun s => { s with outputWires := outWires }
-
+    setOutputWires #[vid]
+  | .Z α n m => createSpider .z α n m col startQubit
+  | .X α n m => createSpider .x α n m col startQubit
   | .cup =>
     -- Cup (2 → 0): Connect two input wires together
     if h : inputWires.size ≥ 2 then
       addEdge { src := inputWires[0], tgt := inputWires[1], etype := .simple }
-    modify fun s => { s with outputWires := #[] }
+    setOutputWires #[]
 
   | .cap =>
     -- Cap (0 → 2): Create two new wires connected together
@@ -432,7 +400,7 @@ def serializeGenerator {n m : Nat} (g : Generator n m) (col : Int) (startQubit :
     addVertex { id := vid1, vtype := .z, phase := 0, pos := some (col, startQubit) }
     addVertex { id := vid2, vtype := .z, phase := 0, pos := some (col, startQubit + 1) }
     addEdge { src := vid1, tgt := vid2, etype := .simple }
-    modify fun s => { s with outputWires := #[vid1, vid2] }
+    setOutputWires #[vid1, vid2]
 
 /-- Serialize a ZxTerm to QGraph structure
     col: horizontal position
@@ -445,13 +413,13 @@ def serializeZxTermAux {n m : Nat} (term : ZxTerm n m) (col : Int) (startQubit :
     -- Serialize A first
     serializeZxTermAux A col startQubit
     -- Outputs of A become inputs of B
-    let middleWires ← get <&> (·.outputWires)
-    modify fun s => { s with inputWires := middleWires }
+    let middleWires ← getOutputWires
+    setInputWires middleWires
     -- Serialize B after A (same qubit offset)
     serializeZxTermAux B (col + 1) startQubit
   | .tens A B =>
     -- Save current input wires
-    let currentInputs ← get <&> (·.inputWires)
+    let currentInputs ← getInputWires
     -- Split inputs between A and B based on their types
     -- For now, assume equal split (simplified)
     let splitPoint := currentInputs.size / 2
@@ -459,20 +427,17 @@ def serializeZxTermAux {n m : Nat} (term : ZxTerm n m) (col : Int) (startQubit :
     let inputsB := currentInputs.extract splitPoint currentInputs.size
 
     -- Serialize A (top qubits starting at qubit 0)
-    let s ← get
-    set { s with inputWires := inputsA }
+    setInputWires inputsA
     serializeZxTermAux A col startQubit
-    let outputsA ← get <&> (·.outputWires)
+    let outputsA ← getOutputWires
 
     -- Serialize B (bottom qubits starting at qubit splitPoint)
-    let s ← get
-    set { s with inputWires := inputsB }
+    setInputWires inputsB
     serializeZxTermAux B col (startQubit + splitPoint)
-    let outputsB ← get <&> (·.outputWires)
+    let outputsB ← getOutputWires
 
     -- Combine outputs
-    let s ← get
-    set { s with outputWires := outputsA ++ outputsB }
+    setOutputWires (outputsA ++ outputsB)
 
 /-- Main serialization function: ZxTerm → QGraphData -/
 def serializeToQGraph {n m : Nat} (term : ZxTerm n m) : QGraphData :=
@@ -486,41 +451,19 @@ def serializeToQGraph {n m : Nat} (term : ZxTerm n m) : QGraphData :=
 
   let ((inputBoundaries, outputBoundaries), finalState) := (do
     -- Create input boundaries (column -1, before gates)
-    let mut inputBoundaries : Array Nat := #[]
-    for i in [0:n] do
-      let vid ← allocVertexId
-      addVertex {
-        id := vid,
-        vtype := .boundary,
-        phase := 0,
-        pos := some (-1, i)  -- Place inputs one column before gates
-      }
-      inputBoundaries := inputBoundaries.push vid
-
-    let s ← get
-    set { s with inputWires := inputBoundaries }
+    let inputBoundaries ← createBoundaries n (-1)
+    setInputWires inputBoundaries
 
     -- Serialize the term (starts at column 0, qubit 0)
     serializeZxTermAux term 0 0
 
     -- Create output boundaries (at column 1000, far to the right)
-    let mut outputBoundaries : Array Nat := #[]
-    for i in [0:m] do
-      let vid ← allocVertexId
-      addVertex {
-        id := vid,
-        vtype := .boundary,
-        phase := 0,
-        pos := some (1000, i)  -- Place outputs far to the right
-      }
-      outputBoundaries := outputBoundaries.push vid
+    let outputBoundaries ← createBoundaries m 1000
 
     -- Connect internal outputs to output boundaries
-    let internalOuts ← get <&> (·.outputWires)
-    for i in [0:min m internalOuts.size] do
-      if h1 : i < internalOuts.size then
-        if h2 : i < outputBoundaries.size then
-          addEdge { src := internalOuts[i], tgt := outputBoundaries[i], etype := .simple }
+    let internalOuts ← getOutputWires
+    internalOuts.zip outputBoundaries |>.forM fun (src, tgt) =>
+      addEdge { src := src, tgt := tgt, etype := .simple }
 
     return (inputBoundaries, outputBoundaries)
   ).run initialState
@@ -565,18 +508,38 @@ def getNeighbors (edges : Array QGraphEdge) (vid : Nat) : Array Nat :=
   outgoing ++ incoming
 
 /--
-Helper: Build identity circuit for n qubits
-Only supports 0, 1, 2 qubits currently
+Build identity circuit for n qubits
 -/
-def buildIdentity? (n : Nat) : Option (Σ n m, ZxTerm n m) :=
-  if n == 0 then
-    some ⟨0, 0, ZxTerm.empty⟩
-  else if n == 1 then
-    some ⟨1, 1, ZxTerm.id⟩
-  else if n == 2 then
-    some ⟨2, 2, ZxTerm.id ⊗ ZxTerm.id⟩
-  else
-    none  -- Not supported for n > 2 yet
+def buildIdentity (n : Nat) : Σ n m, ZxTerm n m := tens_iter n ZxTerm.id
+
+/-- Check if a vertex has a Hadamard edge -/
+private def hasHadamardEdge (edges : Array QGraphEdge) (vid : Nat) : Bool :=
+  edges.any (fun e => (e.src == vid || e.tgt == vid) && e.etype == .hadamard)
+
+/-- Convert a gate vertex to a ZxTerm 1→1 -/
+private def gateToZxTerm (edges : Array QGraphEdge) (gate : QGraphVertex) : ZxTerm 1 1 :=
+  match gate.vtype with
+  | .hbox => ZxTerm.H
+  | .z =>
+    if gate.phase == 0 && hasHadamardEdge edges gate.id then
+      ZxTerm.H
+    else
+      ZxTerm.Z gate.phase 1 1
+  | .x =>
+    if gate.phase == 0 && hasHadamardEdge edges gate.id then
+      ZxTerm.H
+    else
+      ZxTerm.X gate.phase 1 1
+  | .boundary => ZxTerm.id
+
+/-- Extract and sort gates for a specific qubit -/
+private def getGatesForQubit (gatesWithPos : Array (QGraphVertex × Int))
+    (qubitNum : Int) : Array QGraphVertex :=
+  gatesWithPos.filter (fun gp =>
+    match gp.1.pos with
+    | some (_, q) => q == qubitNum
+    | none => false
+  ) |>.qsort (fun a b => a.2 < b.2) |>.map (·.1)
 
 /--
 Reconstruction using topology analysis.
@@ -605,9 +568,7 @@ def reconstructZxTermSimple (qgraph : QGraphData) :
 
   -- If no gates, just return identity
   if gates.isEmpty then
-    match buildIdentity? numQubits with
-    | some result => return result
-    | none => .error s!"Identity circuits for {numQubits} qubits not yet supported"
+    return (buildIdentity numQubits)
 
   -- Group gates by column (position.fst)
   -- Sort by column to process left to right
@@ -618,43 +579,18 @@ def reconstructZxTermSimple (qgraph : QGraphData) :
   )
 
   if gatesWithPos.isEmpty then
-    -- No position info, return identity
-    match buildIdentity? numQubits with
-    | some result => return result
-    | none => .error s!"Identity circuits for {numQubits} qubits not yet supported"
-
+    return (buildIdentity numQubits)
   -- Simple reconstruction: look at each gate individually
   -- For single-qubit circuits, just compose gates in order
   if numQubits == 1 then
     -- Sort gates by column
     let sortedGates := gatesWithPos.qsort (fun a b => a.2 < b.2) |>.map (·.1)
 
-    -- Helper: check if vertex has a Hadamard edge
-    let hasHadamardEdge (vid : Nat) : Bool :=
-      qgraph.edges.any (fun e =>
-        (e.src == vid || e.tgt == vid) && e.etype == .hadamard)
-
     -- Build composition of gates
-    let mut circuit : ZxTerm 1 1 := ZxTerm.id
-
-    for gate in sortedGates do
-      match gate.vtype with
-      | .hbox =>
-        -- Explicit H-box vertex
-        circuit := circuit ; ZxTerm.H
-      | .z =>
-        -- Z-spider: could be a Hadamard if it has phase 0 and a Hadamard edge
-        if gate.phase == 0 && hasHadamardEdge gate.id then
-          circuit := circuit ; ZxTerm.H
-        else
-          circuit := circuit ; ZxTerm.Z gate.phase 1 1
-      | .x =>
-        -- X-spider: could be a Hadamard if it has phase 0 and a Hadamard edge
-        if gate.phase == 0 && hasHadamardEdge gate.id then
-          circuit := circuit ; ZxTerm.H
-        else
-          circuit := circuit ; ZxTerm.X gate.phase 1 1
-      | .boundary => continue
+    let circuit := sortedGates.foldl (fun acc gate =>
+      if gate.vtype == .boundary then acc
+      else acc ; gateToZxTerm qgraph.edges gate
+    ) ZxTerm.id
 
     return ⟨1, 1, circuit⟩
 
@@ -671,68 +607,21 @@ def reconstructZxTermSimple (qgraph : QGraphData) :
 
     if allSimple && numQubits == 2 then
       -- Try to build tensor product of two single-qubit circuits
-      -- This is a simplified heuristic
-      let gatesQubit0 := gatesWithPos.filter (fun gp =>
-        match gp.1.pos with
-        | some (_, q) => q == 0
-        | none => false
-      ) |>.qsort (fun a b => a.2 < b.2) |>.map (·.1)
+      let circuits := #[0, 1].map fun q =>
+        let gates := getGatesForQubit gatesWithPos q
+        gates.foldl (fun acc gate =>
+          if gate.vtype == .boundary then acc
+          else acc ; gateToZxTerm qgraph.edges gate
+        ) ZxTerm.id
 
-      let gatesQubit1 := gatesWithPos.filter (fun gp =>
-        match gp.1.pos with
-        | some (_, q) => q == 1
-        | none => false
-      ) |>.qsort (fun a b => a.2 < b.2) |>.map (·.1)
-
-      -- Helper: check if vertex has a Hadamard edge
-      let hasHadamardEdge (vid : Nat) : Bool :=
-        qgraph.edges.any (fun e =>
-          (e.src == vid || e.tgt == vid) && e.etype == .hadamard)
-
-      -- Build circuit for qubit 0
-      let mut circ0 : ZxTerm 1 1 := ZxTerm.id
-      for gate in gatesQubit0 do
-        match gate.vtype with
-        | .hbox => circ0 := circ0 ; ZxTerm.H
-        | .z =>
-          -- Z-spider: could be a Hadamard if it has phase 0 and a Hadamard edge
-          if gate.phase == 0 && hasHadamardEdge gate.id then
-            circ0 := circ0 ; ZxTerm.H
-          else
-            circ0 := circ0 ; ZxTerm.Z gate.phase 1 1
-        | .x =>
-          -- X-spider: could be a Hadamard if it has phase 0 and a Hadamard edge
-          if gate.phase == 0 && hasHadamardEdge gate.id then
-            circ0 := circ0 ; ZxTerm.H
-          else
-            circ0 := circ0 ; ZxTerm.X gate.phase 1 1
-        | .boundary => continue
-
-      -- Build circuit for qubit 1
-      let mut circ1 : ZxTerm 1 1 := ZxTerm.id
-      for gate in gatesQubit1 do
-        match gate.vtype with
-        | .hbox => circ1 := circ1 ; ZxTerm.H
-        | .z =>
-          if gate.phase == 0 && hasHadamardEdge gate.id then
-            circ1 := circ1 ; ZxTerm.H
-          else
-            circ1 := circ1 ; ZxTerm.Z gate.phase 1 1
-        | .x =>
-          if gate.phase == 0 && hasHadamardEdge gate.id then
-            circ1 := circ1 ; ZxTerm.H
-          else
-            circ1 := circ1 ; ZxTerm.X gate.phase 1 1
-        | .boundary => continue
-
-      return ⟨2, 2, circ0 ⊗ circ1⟩
+      match circuits with
+      | #[circ0, circ1] => return ⟨2, 2, circ0 ⊗ circ1⟩
+      | _ => .error "Internal error: expected 2 circuits"
     else
       -- Complex entangled circuit - return identity
       -- Full reconstruction would require analyzing edge connectivity
       -- and building CNOT/CZ gates from spider mergers
-      match buildIdentity? numQubits with
-      | some result => return result
-      | none => .error s!"Complex circuits with {numQubits} qubits not yet supported"
+      return (buildIdentity numQubits)
 
 /-! ## JSON Export -/
 

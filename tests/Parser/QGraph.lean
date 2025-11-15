@@ -345,5 +345,58 @@ def main (args : List String) : IO UInt32 := do
     IO.println "  lake env lean --run tests/Parser.lean <temp_dir> <golden_dir>"
     return 1
 
+-- Test with golden files
+#eval testParseSimple
+
+#eval do
+  IO.println "\n\nTesting scripts/golden/bell_state.qgraph"
+  let path : System.FilePath := "scripts/golden/bell_state.qgraph"
+  testFile path none
+
+#eval do
+  IO.println "\n\nTesting scripts/golden/cnot.qgraph"
+  let path : System.FilePath := "scripts/golden/cnot.qgraph"
+  testFile path none
+
+-- Roundtrip test: ZxTerm → QGraph → ZxTerm
+#eval do
+  IO.println "\n\n=== Roundtrip Tests ==="
+
+  -- Test 1: Identity
+  IO.println "\n1. Testing identity wire:"
+  let term1 : ZxTerm 1 1 := ZxTerm.id
+  let qgraph1 := serializeToQGraph term1
+  IO.println s!"   Serialized: {qgraph1.vertices.size} vertices, {qgraph1.edges.size} edges"
+  match reconstructZxTermSimple qgraph1 with
+  | .ok ⟨n, m, _⟩ => IO.println s!"   ✓ Reconstructed: ZxTerm {n} {m}"
+  | .error e => IO.println s!"   ✗ Failed: {e}"
+
+  -- Test 2: Hadamard
+  IO.println "\n2. Testing Hadamard gate:"
+  let term2 : ZxTerm 1 1 := ZxTerm.H
+  let qgraph2 := serializeToQGraph term2
+  IO.println s!"   Serialized: {qgraph2.vertices.size} vertices, {qgraph2.edges.size} edges"
+  match reconstructZxTermSimple qgraph2 with
+  | .ok ⟨n, m, _⟩ => IO.println s!"   ✓ Reconstructed: ZxTerm {n} {m}"
+  | .error e => IO.println s!"   ✗ Failed: {e}"
+
+  -- Test 3: Two parallel Hadamards (tensor product)
+  IO.println "\n3. Testing H ⊗ H:"
+  let term3 : ZxTerm 2 2 := ZxTerm.H ⊗ ZxTerm.H
+  let qgraph3 := serializeToQGraph term3
+  IO.println s!"   Serialized: {qgraph3.vertices.size} vertices, {qgraph3.edges.size} edges"
+  match reconstructZxTermSimple qgraph3 with
+  | .ok ⟨n, m, _⟩ => IO.println s!"   ✓ Reconstructed: ZxTerm {n} {m}"
+  | .error e => IO.println s!"   ✗ Failed: {e}"
+
+  -- Test 4: Hadamard composition
+  IO.println "\n4. Testing H ; H (should be identity):"
+  let term4 : ZxTerm 1 1 := ZxTerm.H ; ZxTerm.H
+  let qgraph4 := serializeToQGraph term4
+  IO.println s!"   Serialized: {qgraph4.vertices.size} vertices, {qgraph4.edges.size} edges"
+  match reconstructZxTermSimple qgraph4 with
+  | .ok ⟨n, m, _⟩ => IO.println s!"   ✓ Reconstructed: ZxTerm {n} {m}"
+  | .error e => IO.println s!"   ✗ Failed: {e}"
+
 -- Uncomment to run manual tests interactively:
 -- #eval runManualTests

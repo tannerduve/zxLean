@@ -121,6 +121,15 @@ end ZxTerm
 
 open ZxTerm
 
+/-- Tensor a diagram with itself `n` times -/
+def tens_iter {i j : ℕ} (n : ℕ) (D : ZxTerm i j) : (Σ n₁ n₂, ZxTerm n₁ n₂) :=
+  match n with
+  | 0 => ⟨0, 0, .empty⟩
+  | 1 => ⟨i, j, D⟩
+  | Nat.succ n' =>
+      let ⟨n₁, n₂, term⟩ := tens_iter n' D
+      ⟨n₁ + i, n₂ + j, term ⊗ D⟩
+
 /--
 The dagger of a ZX diagram.
 
