@@ -1,9 +1,9 @@
 import Mathlib.Data.Rat.Defs
 
 /-!
-# QGraph Data Structures
+# QGraph data types
 
-Core data structures for the Quantomatic `.qgraph` JSON format used by PyZX.
+Data structures for the Quantomatic `.qgraph` JSON format used by PyZX.
 
 ## Format
 

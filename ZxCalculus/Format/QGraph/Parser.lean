@@ -3,11 +3,9 @@ import Parser
 import ZxCalculus.Format.QGraph.Types
 
 /-!
-# QGraph JSON Parser
+# QGraph JSON parser
 
-Parses Quantomatic `.qgraph` JSON format into `QGraph.Data` structures.
-
-PyZX exports graphs via `g.to_json()` in this format.
+Parsing of Quantomatic/PyZX `.qgraph` JSON into `QGraph.Data`.
 -/
 
 open Lean (Json)

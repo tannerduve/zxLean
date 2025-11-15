@@ -3,9 +3,9 @@ import ZxCalculus.Format.QGraph.Types
 import ZxCalculus.Format.QGraph.Serializer
 
 /-!
-# QGraph JSON Export
+# QGraph JSON export
 
-Converts QGraph data structures to JSON and writes .qgraph files.
+Conversion from QGraph data to JSON and `.qgraph` files.
 -/
 
 open Lean (Json)

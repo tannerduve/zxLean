@@ -6,15 +6,14 @@ import ZxCalculus.Format.QGraph.Json
 
 
 /-!
-# QGraph Format
+# QGraph format
 
-Convenience module that re-exports all QGraph functionality.
+Entry point for working with PyZX-style `.qgraph` diagrams.
 
-This module provides everything needed to work with PyZX's `.qgraph` format:
-- Data structures (`Types`)
+This module re-exports:
+- data structures (`Types`)
 - JSON parsing (`Parser`)
-- ZxTerm serialization (`Serializer`)
-- ZxTerm reconstruction (`Reconstructor`)
+- `ZxTerm` ↔ QGraph conversion (`Serializer`, `Reconstructor`)
 - JSON export (`Json`)
 -/
 namespace ZxCalculus.Format.QGraph

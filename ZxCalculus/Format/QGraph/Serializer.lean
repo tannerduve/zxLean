@@ -2,9 +2,9 @@ import ZxCalculus.AST
 import ZxCalculus.Format.QGraph.Types
 
 /-!
-# QGraph Serializer
+# QGraph serializer
 
-Serializes ZX diagrams (`ZxTerm n m`) to QGraph data structures using a state monad.
+Serialization of `ZxTerm n m` into QGraph data structures using a state monad.
 -/
 
 namespace ZxCalculus.Format.QGraph
@@ -97,8 +97,8 @@ def serializeGenerator {n m : Nat} (g : Generator n m) (col : Int) (startQubit :
     setOutputWires swapped
 
   | .H =>
-    -- Hadamard gate: In PyZX, this is represented as a Z-spider with a Hadamard edge
-    -- Create a Z-spider with phase 0
+    -- In PyZX, a Hadamard gate is encoded as a Z-spider with a Hadamard edge
+    -- Here we create a Z-spider with phase 0 and attach a Hadamard edge
     let vid ← allocVertexId
     addVertex {
       id := vid,
@@ -114,13 +114,13 @@ def serializeGenerator {n m : Nat} (g : Generator n m) (col : Int) (startQubit :
   | .Z α n m => createSpider .z α n m col startQubit
   | .X α n m => createSpider .x α n m col startQubit
   | .cup =>
-    -- Cup (2 → 0): Connect two input wires together
+    -- Cup (2 → 0): connect two input wires
     if h : inputWires.size ≥ 2 then
       addEdge { src := inputWires[0], tgt := inputWires[1], etype := .simple }
     setOutputWires #[]
 
   | .cap =>
-    -- Cap (0 → 2): Create two new wires connected together
+    -- Cap (0 → 2): create two new wires and connect them
     let vid1 ← allocVertexId
     let vid2 ← allocVertexId
     addVertex { id := vid1, vtype := .z, phase := 0, pos := some (col, startQubit) }
@@ -146,8 +146,8 @@ def serializeZxTermAux {n m : Nat} (term : ZxTerm n m) (col : Int) (startQubit :
   | .tens A B =>
     -- Save current input wires
     let currentInputs ← getInputWires
-    -- Split inputs between A and B based on their types
-    -- For now, assume equal split (simplified)
+    -- Split inputs between A and B.
+    -- This currently assumes an equal split and so only handles balanced tensors.
     let splitPoint := currentInputs.size / 2
     let inputsA := currentInputs.extract 0 splitPoint
     let inputsB := currentInputs.extract splitPoint currentInputs.size

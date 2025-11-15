@@ -2,21 +2,20 @@ import ZxCalculus.AST
 import ZxCalculus.Format.QGraph.Types
 
 /-!
-# QGraph Reconstructor
+# QGraph reconstructor
 
-Reconstructs ZX diagrams (`ZxTerm n m`) from QGraph data structures.
+Partial reconstruction of `ZxTerm n m` from QGraph data.
 
-This uses topology analysis to identify gates and rebuild the circuit.
+Currently supports:
+- simple sequential circuits (gates in series)
+- parallel single-qubit circuits (tensor products)
 
-## Current Limitations
-- Handles simple sequential circuits (gates in series)
-- Handles parallel gates (tensor products)
-- Does not handle complex graph rewrites or multi-arity spiders beyond simple cases
+More general ZX-diagram reconstruction is out of scope here.
 -/
 
 namespace ZxCalculus.Format.QGraph
 
-/-- Convert a vertex to a Generator (if it's not a boundary) -/
+/-- Convert a non-boundary vertex to a `Generator`. -/
 def vertexToGenerator (v : Vertex) (numInputs numOutputs : Nat) :
     Except String (Σ n m, Generator n m) := do
   match v.vtype with
@@ -24,7 +23,7 @@ def vertexToGenerator (v : Vertex) (numInputs numOutputs : Nat) :
   | .z => .ok ⟨numInputs, numOutputs, Generator.Z v.phase numInputs numOutputs⟩
   | .x => .ok ⟨numInputs, numOutputs, Generator.X v.phase numInputs numOutputs⟩
   | .hbox =>
-    -- H-box should be 1-1
+    -- H-box is interpreted as a 1→1 gate here
     if numInputs == 1 && numOutputs == 1 then
       .ok ⟨1, 1, Generator.H⟩
     else
@@ -34,20 +33,20 @@ def vertexToGenerator (v : Vertex) (numInputs numOutputs : Nat) :
 def findVertex? (vertices : Array Vertex) (id : Nat) : Option Vertex :=
   vertices.find? (·.id == id)
 
-/-- Get neighbors of a vertex -/
+/-- Get all neighbors of a vertex via incoming or outgoing edges. -/
 def getNeighbors (edges : Array Edge) (vid : Nat) : Array Nat :=
   let outgoing := edges.filter (·.src == vid) |>.map (·.tgt)
   let incoming := edges.filter (·.tgt == vid) |>.map (·.src)
   outgoing ++ incoming
 
-/-- Build identity circuit for n qubits -/
+/-- Build the `n`-qubit identity diagram. -/
 def buildIdentity (n : Nat) : Σ n m, ZxTerm n m := tens_iter n ZxTerm.id
 
 /-- Check if a vertex has a Hadamard edge -/
 private def hasHadamardEdge (edges : Array Edge) (vid : Nat) : Bool :=
   edges.any (fun e => (e.src == vid || e.tgt == vid) && e.etype == .hadamard)
 
-/-- Convert a gate vertex to a ZxTerm 1→1 -/
+/-- Convert a gate vertex to a `ZxTerm 1 1`. -/
 private def gateToZxTerm (edges : Array Edge) (gate : Vertex) : ZxTerm 1 1 :=
   match gate.vtype with
   | .hbox => ZxTerm.H
