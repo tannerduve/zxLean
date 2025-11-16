@@ -151,8 +151,8 @@ lemma CNOT_gate_matrix :
 /-- Z-spider with phase `α * π`, with `n` inputs and `m` outputs.
 
 Matrix: \`∣0⟩^{⊗ m} ⟨0∣^{⊗ n} + e^{i α π} ∣1⟩^{⊗ m} ⟨1∣^{⊗ n}\`. -/
-def Z_spider (α : ℚ) (n m : ℕ) : LinMap n m :=
-  let phase := (α : ℝ) * π
+def Z_spider (α : ZMod 8) (n m : ℕ) : LinMap n m :=
+  let phase := ((α.val : ℝ) * π) / 4
   -- Build |0⟩^⊗m and |1⟩^⊗m using ket_pow
   let ket0_m := ket_pow ket0 m
   let ket1_m := ket_pow ket1 m
@@ -169,8 +169,8 @@ def Z_spider (α : ℚ) (n m : ℕ) : LinMap n m :=
 /-- X-spider with phase `α * π`.
 
 Matrix: \`∣+⟩^{⊗ m} ⟨+∣^{⊗ n} + e^{i α π} ∣-⟩^{⊗ m} ⟨-∣^{⊗ n}\`. -/
-def X_spider (α : ℚ) (n m : ℕ) : LinMap n m :=
-  let phase := (α : ℝ) * π
+def X_spider (α : ZMod 8) (n m : ℕ) : LinMap n m :=
+  let phase := ((α.val : ℝ) * π) / 4
   let ketPlus_m := ket_pow ketPlus m
   let ketMinus_m := ket_pow ketMinus m
   let ketPlus_n := ket_pow ketPlus n

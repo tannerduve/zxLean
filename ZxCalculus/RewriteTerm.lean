@@ -97,12 +97,12 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
 -- ZX-calculus specific rewrite rules
 
 /-- Spider fusion for Z spiders: composing Z spiders adds their phases -/
-| z_fus : ∀ {n m k} (α β : ℚ), ZxEquiv
+| z_fus : ∀ {n m k} (α β : ZMod 8), ZxEquiv
     ((Z α n m).comp (Z β m k))
     (Z (α + β) n k)
 
 /-- Spider fusion for X spiders: composing X spiders adds their phases -/
-| x_fus : ∀ {n m k} (α β : ℚ), ZxEquiv
+| x_fus : ∀ {n m k} (α β : ZMod 8), ZxEquiv
     ((X α n m).comp (X β m k))
     (X (α + β) n k)
 
@@ -113,12 +113,12 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
 | x_id : ZxEquiv (X 0 1 1) id
 
 /-- Color change: Hadamard conjugation converts Z spiders to X spiders -/
-| color_change_Z : ∀ (α : ℚ) (n m : ℕ), ZxEquiv
+| color_change_Z : ∀ (α : ZMod 8) (n m : ℕ), ZxEquiv
     (((tensor_pow H n).comp (by simpa [Nat.add_zero] using (Z α n m))).comp (tensor_pow H m))
     (by simpa [Nat.add_zero] using (X α n m))
 
 /-- Color change: Hadamard conjugation converts X spiders to Z spiders -/
-| color_change_X : ∀ (α : ℚ) (n m : ℕ), ZxEquiv
+| color_change_X : ∀ (α : ZMod 8) (n m : ℕ), ZxEquiv
     (((tensor_pow H n).comp (by simpa [Nat.add_zero] using (X α n m))).comp (tensor_pow H m))
     (by simpa [Nat.add_zero] using (Z α n m))
 
@@ -127,7 +127,7 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
 -- The full multi-wire version requires more careful type handling
 /-- π-copy for X through Z -/
 | z_pi_copy :
-    ∀ {k n : ℕ} (α : ℚ),
+    ∀ {k n : ℕ} (α : ZMod 8),
       ZxEquiv
         (  -- (Xπ ⊗ id^{⊗ k}) ; Zα
           (by
@@ -146,7 +146,7 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
         )
 /-- π-copy for Z through X: general multi-wire version -/
 | x_pi_copy :
-    ∀ {k n : ℕ} (α : ℚ),
+    ∀ {k n : ℕ} (α : ZMod 8),
       ZxEquiv
         (  -- (Zπ ⊗ id^{⊗ k}) ; Xα
           (by
