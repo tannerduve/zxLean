@@ -17,13 +17,26 @@ lemma interp_cast {n m n'} (h_n : n = n') (t : ZxTerm n m) :
 
 /-! ### Helper definitions to hide casts -/
 
-/-- Helper: cast Z spider from (n, m) to (n*1, m*1) for color change -/
-def zCasted (α : ℚ) (n m : ℕ) : ZxTerm (n * 1) (m * 1) :=
-  by simpa [Nat.add_zero] using ZxTerm.Z α n m
 
-/-- Helper: cast X spider from (n, m) to (n*1, m*1) for color change -/
-def xCasted (α : ℚ) (n m : ℕ) : ZxTerm (n * 1) (m * 1) :=
-  by simpa [Nat.add_zero] using ZxTerm.X α n m
+/-- Helper: Z spider as type (n, m) viewed as (n*1, m*1) for color change -/
+def zCasted (α : ZMod 8) (n m : ℕ) : ZxTerm (n * 1) (m * 1) :=
+  ZxTerm.gen (Generator.Z α (n * 1) (m * 1))
+
+/-- Helper: X spider as type (n, m) viewed as (n*1, m*1) for color change -/
+def xCasted (α : ZMod 8) (n m : ℕ) : ZxTerm (n * 1) (m * 1) :=
+  ZxTerm.gen (Generator.X α (n * 1) (m * 1))
+
+@[simp]
+lemma interp_zCasted (α : ZMod 8) (n m : ℕ) :
+  interp (zCasted α n m) = interp (by simpa [Nat.mul_one] using (ZxTerm.Z α n m)) := by
+  sorry
+
+@[simp]
+lemma interp_xCasted (α : ZMod 8) (n m : ℕ) :
+  interp (xCasted α n m) = interp (by simpa [Nat.mul_one] using (ZxTerm.X α n m))  := by
+  simp [Nat.mul_one, xCasted, cast, interp, interpGen, X_spider, qubitSpaceToVec, ZxTerm.X]
+  sorry
+
 
 /-! ### Helper lemmas for soundness cases -/
 
@@ -37,16 +50,18 @@ lemma soundness_z_id :
 
 lemma soundness_x_id :
     interp (ZxTerm.X 0 1 1) = interp ZxTerm.id := by
-  simp only [ZxTerm.X, interp, interpGen, ZxTerm.id, X_spider, qubitSpaceToVec]
-  simp [ket_pow, qubitSpaceEquiv]
+  simp only [ZxTerm.X, interp, interpGen, ZxTerm.id, X_spider, qubitSpaceToVec, Nat.reducePow, QubitSpace.eq_2, ket_pow, qubitSpaceEquiv, Equiv.refl_symm,
+    Equiv.refl_apply, ZMod.val_zero, CharP.cast_eq_zero, zero_mul, zero_div, Complex.ofReal_zero,
+    mul_zero, Complex.exp_zero, one_smul, ketPlus, Ket.normalize, ketMinus]
   sorry
 
-lemma soundness_color_change_Z (α : ℚ) (n m : ℕ) :
+lemma soundness_color_change_Z (α : ZMod 8) (n m : ℕ) :
     interp (tensor_pow ZxTerm.H n ; zCasted α n m ; tensor_pow ZxTerm.H m)
     = interp (xCasted α n m) := by
+  simp [ZxTerm.H, zCasted, ZxTerm.Z, xCasted, ZxTerm.X, cast, interp]
   sorry
 
-lemma soundness_color_change_X (α : ℚ) (n m : ℕ) :
+lemma soundness_color_change_X (α : ZMod 8) (n m : ℕ) :
     interp (tensor_pow ZxTerm.H n ; xCasted α n m ; tensor_pow ZxTerm.H m)
     = interp (zCasted α n m) := by
   sorry
@@ -99,32 +114,9 @@ theorem soundness {n m : ℕ} (A B : ZxTerm n m) (equiv : ZxEquiv A B) : interp 
     · case x_id =>
         exact soundness_x_id
     · case color_change_Z α n m =>
-        exact soundness_color_change_Z α n m
+        sorry
     · case color_change_X α n m =>
-        exact soundness_color_change_X α n m
+        sorry
     · case z_pi_copy α => sorry
     · case x_pi_copy α => sorry
-    · case z_phase_period α n m =>
-        simp only [ZxTerm.Z, interp, interpGen, Z_spider]
-        congr 1
-        have h1 : ((α + 2 : ℚ) : ℝ) * Real.pi = (α : ℝ) * Real.pi + 2 * Real.pi := by
-          push_cast; ring
-        have h2 : Complex.I * ↑((α : ℝ) * Real.pi + 2 * Real.pi) =
-                  Complex.I * ↑((α : ℝ) * Real.pi) + Complex.I * (2 * Real.pi) := by
-          simp [Complex.ofReal_add]; ring
-        rw [h1, h2, Complex.exp_add]
-        have : Complex.exp (Complex.I * (2 * ↑Real.pi)) = 1 := by
-          rw [mul_comm Complex.I, Complex.exp_two_pi_mul_I]
-        rw [this]; simp
-    · case x_phase_period α n m =>
-        simp only [ZxTerm.X, interp, interpGen, X_spider]
-        congr 1
-        have h1 : ((α + 2 : ℚ) : ℝ) * Real.pi = (α : ℝ) * Real.pi + 2 * Real.pi := by
-          push_cast; ring
-        have h2 : Complex.I * ↑((α : ℝ) * Real.pi + 2 * Real.pi) =
-                  Complex.I * ↑((α : ℝ) * Real.pi) + Complex.I * (2 * Real.pi) := by
-          simp [Complex.ofReal_add]; ring
-        rw [h1, h2, Complex.exp_add]
-        have : Complex.exp (Complex.I * (2 * ↑Real.pi)) = 1 := by
-          rw [mul_comm Complex.I, Complex.exp_two_pi_mul_I]
-        rw [this]; simp
+    · case euler_decomp => sorry

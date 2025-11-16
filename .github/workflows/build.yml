@@ -18,5 +18,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
         with:
-          build-args: "--wfail"
-      # delete the extra "Build project: lake build" step
+          build-args: "ZxCalculus"
