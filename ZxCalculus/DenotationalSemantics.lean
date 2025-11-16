@@ -94,7 +94,7 @@ def qubitSpaceEquiv : (n : ℕ) → QubitSpace n ≃ Fin (2^n)
       let rec_equiv := qubitSpaceEquiv (n + 1)
       -- QubitSpace (n+2) = Qubit × QubitSpace (n+1) ≃ Fin 2 × Fin (2^(n+1)) ≃ Fin (2^(n+2))
       (Equiv.prodCongr (Equiv.refl Qubit) rec_equiv).trans
-        (finProdFinEquiv.trans (Equiv.cast (by ring)))
+        (finProdFinEquiv.trans (Equiv.cast (by ring_nf)))
 
 /-- Convert a ket on `QubitSpace n` to a column vector with `Fin (2^n)` indexing. -/
 def qubitSpaceToVec {n : ℕ} (ψ : Ket (QubitSpace n)) : Matrix (Fin (2^n)) (Fin 1) ℂ :=
@@ -119,6 +119,10 @@ def X_gate : 𝐔[Fin 2] := Qubit.X
 /-- Pauli `Z` gate. -/
 def Z_gate : 𝐔[Fin 2] := Qubit.Z
 
+def S_gate : 𝐔[Fin 2] := Qubit.S
+
+def T_gate : 𝐔[Fin 2] := Qubit.T
+
 /-- Extract the underlying matrix from a unitary. -/
 def unitaryToMatrix {d : Type*} [Fintype d] [DecidableEq d] (U : 𝐔[d]) : Matrix d d ℂ :=
   U.val
@@ -129,15 +133,17 @@ The first qubit is the control and the second qubit is the target. -/
 def CNOT_gate : 𝐔[Fin 2 × Fin 2] :=
   Qubit.controllize Qubit.X
 
+def CNOT_matrix := Matrix.reindex finProdFinEquiv finProdFinEquiv (CNOT_gate.val)
+
 /-- The matrix representation of CNOT is the standard 4×4 permutation matrix. -/
 lemma CNOT_gate_matrix :
-    Matrix.reindex finProdFinEquiv finProdFinEquiv CNOT_gate.val =
+    CNOT_matrix =
       ![![(1:ℂ), 0, 0, 0],
         ![0, 1, 0, 0],
         ![0, 0, 0, 1],
         ![0, 0, 1, 0]] := by
         ext i j
-        simp only [CNOT_gate, Qubit.X, reindex_apply]
+        simp only [CNOT_matrix, CNOT_gate, Qubit.X, reindex_apply]
         fin_cases i <;> fin_cases j <;> rfl
 
 /-! ### Spider operators -/
