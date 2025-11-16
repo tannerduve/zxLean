@@ -169,8 +169,3 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
 
 /-- Similar for X-spiders -/
 | x_phase_period : ∀ {α n m}, ZxEquiv (X (α + 2) n m) (X α n m)
-
--- TODO: Additional rules to implement
--- - Bialgebra rule: (Z⊗Z) ; swap ; (X⊗X) = (X⊗X) ; swap ; (Z⊗Z)
--- - Euler decomposition: H = Z(π/2) ; X(π/2) ; Z(π/2)
--- - Hopf algebra rules (cup/cap interactions with spiders)
