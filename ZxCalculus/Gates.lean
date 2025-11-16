@@ -1,5 +1,6 @@
 import ZxCalculus.AST
 import ZxCalculus.RewriteTerm
+import ZxCalculus.DenotationalSemantics
 
 /-!
 # Quantum Gates
@@ -46,3 +47,271 @@ def S : ZxTerm 1 1 := Rz (1/2)
     Copies control via Z-spider, XORs with target via X-spider. -/
 def CNOT : ZxTerm 2 2 :=
   (Z 0 1 2 ⊗' id) ; (id ⊗' X 0 2 1)
+
+/--
+Pauli Z gate: A Z spider with phase π, 1 input, 1 output
+-/
+def PauliZ : ZxTerm 1 1 := Rz 1
+
+/--
+Paulix X gate: An X spider with phase π, 1 input, 1 output
+-/
+def PauliX : ZxTerm 1 1 := Rx 1
+
+/-! Semantics proofs -/
+
+/-
+Want to show H, S, CNOT, and T diagrams map to the correct matrices via `interp`
+This amounts to soundness of Clifford+T (i think?)
+-/
+
+theorem H_gate_sound : interp (ZxTerm.H) = H_gate := by
+    simp only [H, interp, interpGen, unitaryToMatrix, Nat.reducePow]
+
+theorem S_gate_sound : interp S = S_gate := by
+  simp only [S, Rz, Z, interp, interpGen, Z_spider, qubitSpaceToVec]
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [
+    S_gate, Qubit.S, ket_pow, ket0, ket1,
+    qubitSpaceEquiv, Ket.basis,
+    Matrix.mul_apply
+  ]
+  have : Complex.I * (2⁻¹ * ↑Real.pi) = ↑Real.pi / 2 * Complex.I := by ring
+  rw [this]
+  exact Complex.exp_pi_div_two_mul_I
+
+theorem T_gate_sound : interp T = T_gate := by
+  simp only [T, Rz, Z, interp, interpGen, Z_spider, qubitSpaceToVec]
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [
+    T_gate, Qubit.T, ket_pow, ket0, ket1,
+    Ket.basis, qubitSpaceEquiv, Matrix.mul_apply
+  ]
+  have h1 : Complex.I * (4⁻¹ * ↑Real.pi) = (↑Real.pi / 4) * Complex.I := by ring
+  rw [h1, ← Complex.cos_add_sin_I]
+  rw [show Complex.cos (↑Real.pi / 4) = ↑(Real.cos (Real.pi / 4)) by norm_cast]
+  rw [show Complex.sin (↑Real.pi / 4) = ↑(Real.sin (Real.pi / 4)) by norm_cast]
+  rw [Real.cos_pi_div_four, Real.sin_pi_div_four]
+  field_simp
+  ring_nf;
+  norm_cast
+  norm_num;
+  rw [mul_comm]
+
+/-! ### CNOT Matrix Entry Lemmas
+
+We break down the CNOT soundness proof into individual matrix entries.
+The CNOT matrix is the standard controlled-NOT permutation matrix:
+  [[1, 0, 0, 0],
+   [0, 1, 0, 0],
+   [0, 0, 0, 1],
+   [0, 0, 1, 0]]
+-/
+
+-- Row 0 entries
+lemma cnot_entry_00 : interp CNOT 0 0 = 1 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_01 : interp CNOT 0 1 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_02 : interp CNOT 0 2 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_03 : interp CNOT 0 3 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+-- Row 1 entries
+lemma cnot_entry_10 : interp CNOT 1 0 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_11 : interp CNOT 1 1 = 1 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_12 : interp CNOT 1 2 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_13 : interp CNOT 1 3 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+-- Row 2 entries
+lemma cnot_entry_20 : interp CNOT 2 0 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_21 : interp CNOT 2 1 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_22 : interp CNOT 2 2 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_23 : interp CNOT 2 3 = 1 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+-- Row 3 entries
+lemma cnot_entry_30 : interp CNOT 3 0 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_31 : interp CNOT 3 1 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_32 : interp CNOT 3 2 = 1 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+lemma cnot_entry_33 : interp CNOT 3 3 = 0 := by
+  unfold CNOT interp
+  norm_num [interpGen, tensLin, Z_spider, X_spider, qubitSpaceToVec, ket_pow, ket0, ket1,
+            ketPlus, ketMinus, Ket.normalize, qubitSpaceEquiv, Ket.basis,
+            Matrix.mul_apply, Matrix.kroneckerMap, Matrix.reindex_apply,
+            finProdFinEquiv, Equiv.prodCongr_apply, Equiv.cast_apply]
+  sorry
+
+/-- CNOT soundness: the ZX interpretation equals the standard matrix -/
+theorem CNOT_gate_sound : interp CNOT = CNOT_matrix := by
+  ext i j
+  fin_cases i <;> fin_cases j
+  · -- case 0 0
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_zero, Matrix.head_cons]
+    exact cnot_entry_00
+  · -- case 0 1
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_one, Matrix.head_cons, Matrix.cons_val_zero, Matrix.tail_cons]
+    exact cnot_entry_01
+  · -- case 0 2
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_fin_one, Matrix.head_cons]
+    exact cnot_entry_02
+  · -- case 0 3
+    rw [CNOT_gate_matrix]
+    simp only [Fin.mk_one, Matrix.cons_val_succ, Matrix.head_cons, Matrix.cons_val_zero,
+               Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_03
+  · -- case 1 0
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_10
+  · -- case 1 1
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_11
+  · -- case 1 2
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_fin_one, Matrix.cons_val_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_12
+  · -- case 1 3
+    rw [CNOT_gate_matrix]
+    simp only [Fin.mk_one, Matrix.cons_val_succ, Matrix.cons_val_one, Matrix.head_cons,
+               Matrix.cons_val_zero, Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_13
+  · -- case 2 0
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_fin_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_20
+  · -- case 2 1
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_one, Matrix.cons_val_fin_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_21
+  · -- case 2 2
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_fin_one, Matrix.head_cons, Matrix.tail_cons]
+    exact cnot_entry_22
+  · -- case 2 3
+    rw [CNOT_gate_matrix]
+    simp only [Fin.mk_one, Matrix.cons_val_succ, Matrix.cons_val_fin_one, Matrix.head_cons,
+               Matrix.cons_val_zero, Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_23
+  · -- case 3 0
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_zero, Fin.mk_one, Matrix.cons_val_succ, Matrix.head_cons,
+               Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_30
+  · -- case 3 1
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_one, Fin.mk_one, Matrix.cons_val_succ, Matrix.head_cons,
+               Matrix.cons_val_zero, Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_31
+  · -- case 3 2
+    rw [CNOT_gate_matrix]
+    simp only [Matrix.cons_val_fin_one, Fin.mk_one, Matrix.cons_val_succ, Matrix.head_cons,
+               Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_32
+  · -- case 3 3
+    rw [CNOT_gate_matrix]
+    simp only [Fin.mk_one, Matrix.cons_val_succ, Matrix.head_cons, Matrix.cons_val_zero,
+               Matrix.tail_cons, Nat.succ_eq_add_one, Nat.reduceAdd]
+    exact cnot_entry_33
