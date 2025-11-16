@@ -18,9 +18,6 @@ jobs:
         with:
           build-args: ""
 
-      - name: Get Mathlib cache
-        run: lake exe cache get
-
       - name: Build project
         run: lake build
 
