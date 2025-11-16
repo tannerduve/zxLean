@@ -14,22 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Lean
-        uses: leanprover/lean-action@v1
+      - uses: leanprover/lean-action@v1
         with:
-          build-args: ""
+          build: "false"      # don't auto-run lake build
+          test: "false"
 
-      - name: Build main library
-        run: lake build
-
-      - name: Test - Fusion
-        run: lake build tests.Fusion
-        
-      - name: Test - Identity
-        run: lake build tests.Identity
+      # One build that does everything you care about
+      - name: Build tests
+        run: lake build tests.Fusion tests.Identity
 
       - name: All tests passed
         run: echo "✓ All tests passed successfully!"
