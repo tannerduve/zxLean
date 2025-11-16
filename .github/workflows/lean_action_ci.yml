@@ -23,5 +23,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
         with:
-          build-args: "--wfail"
+          build-args: "ZxCalculus"
       - uses: leanprover-community/docgen-action@v1

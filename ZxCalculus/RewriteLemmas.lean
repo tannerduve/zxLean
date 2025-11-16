@@ -49,9 +49,17 @@ theorem pauliZ_as_HXH : ZxEquiv PauliZ (H ; PauliX ; H) := by
   exact symm h
 
 /-- Hadamard is self-inverse
-TODO: This is currently unprovable but should be provable after adding Euler decomposition to our rewrite rules
  -/
-theorem hadamard_involutive : ZxEquiv (H ; H) id := sorry
+theorem hadamard_involutive : ZxEquiv (H ; H) id := by
+  have h1 : ZxEquiv (H ; H) ((Z 2 1 1 ; X 2 1 1 ; Z 2 1 1) ; (Z 2 1 1 ; X 2 1 1 ; Z 2 1 1)) :=
+    seq_cong euler_decomp euler_decomp
+
+  -- Fuse the middle Z spiders: Z₂ ; Z₂ = Z₄ (using z_fus)
+  have z_fuse : ZxEquiv (Z 2 1 1 ; Z 2 1 1) (Z 4 1 1) := by
+    have := @z_fus 1 1 1 2 2
+    ring_nf at this
+    exact this
+  sorry
 
 /-! ## Fusion Helpers -/
 

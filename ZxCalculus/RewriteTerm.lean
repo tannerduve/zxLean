@@ -163,9 +163,5 @@ inductive ZxEquiv : {n m : ℕ} → ZxTerm n m → ZxTerm n m → Prop
                 using (tensor_pow (Z 1 1 1) n)
             )
         )
-
-/-- Phase periodicity: Z-spiders with phases differing by 2 (i.e., 2π) are equivalent -/
-| z_phase_period : ∀ {α n m}, ZxEquiv (Z (α + 2) n m) (Z α n m)
-
-/-- Similar for X-spiders -/
-| x_phase_period : ∀ {α n m}, ZxEquiv (X (α + 2) n m) (X α n m)
+| euler_decomp :
+  ZxEquiv H (Z 2 1 1 ; X 2 1 1 ; Z 2 1 1)
