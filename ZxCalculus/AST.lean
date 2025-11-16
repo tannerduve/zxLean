@@ -55,9 +55,9 @@ inductive Generator : ℕ → ℕ → Type where
   /-- Hadamard gate: rotates between Z and X bases -/
   | H : Generator 1 1
   /-- Green spider (Z-basis) with phase α*π, n inputs, m outputs -/
-  | Z (α : ℚ) (n m : ℕ) : Generator n m
+  | Z (α : ZMod 8) (n m : ℕ) : Generator n m
   /-- Red spider (X-basis) with phase α*π, n inputs, m outputs -/
-  | X (α : ℚ) (n m : ℕ) : Generator n m
+  | X (α : ZMod 8) (n m : ℕ) : Generator n m
   /-- Cup (creates Bell state): 0 → 2 -/
   | cup : Generator 0 2
   /-- Cap (Bell measurement): 2 → 0 -/
@@ -105,11 +105,11 @@ def swap (n m : ℕ) : ZxTerm (n + m) (m + n) := ZxTerm.gen (Generator.swap n m)
 /-- Hadamard gate -/
 def H : ZxTerm 1 1 := ZxTerm.gen Generator.H
 
-/-- Z-spider with phase α*π, n inputs, m outputs -/
-def Z (α : ℚ) (n m : ℕ) : ZxTerm n m := ZxTerm.gen (Generator.Z α n m)
+/-- Z-spider with phase α*(π / 4), n inputs, m outputs -/
+def Z (α : ZMod 8) (n m : ℕ) : ZxTerm n m := ZxTerm.gen (Generator.Z α n m)
 
-/-- X-spider with phase α*π, n inputs, m outputs -/
-def X (α : ℚ) (n m : ℕ) : ZxTerm n m := ZxTerm.gen (Generator.X α n m)
+/-- X-spider with phase α*(π / 4), n inputs, m outputs -/
+def X (α : ZMod 8) (n m : ℕ) : ZxTerm n m := ZxTerm.gen (Generator.X α n m)
 
 /-- Cup: creates a Bell state (0 → 2) -/
 def cup : ZxTerm 0 2 := ZxTerm.gen Generator.cup
