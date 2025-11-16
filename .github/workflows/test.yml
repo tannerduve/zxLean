@@ -9,21 +9,23 @@ on:
     branches:
       - main
 
+concurrency:
+  group: "tests-${{ github.ref }}"
+  cancel-in-progress: true
+
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: leanprover/lean-action@v1
         with:
-          build: "false"      # don't auto-run lake build
+          build: "true"
+          build-args: "tests.Fusion tests.Identity"
           test: "false"
-
-      # One build that does everything you care about
-      - name: Build tests
-        run: lake build tests.Fusion tests.Identity
 
       - name: All tests passed
         run: echo "✓ All tests passed successfully!"

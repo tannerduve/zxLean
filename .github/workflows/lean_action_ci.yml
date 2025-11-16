@@ -6,6 +6,15 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: "lean-docs-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest

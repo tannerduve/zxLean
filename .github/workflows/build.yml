@@ -6,14 +6,17 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: "build-${{ github.ref }}"
+  cancel-in-progress: true
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Lean
-        uses: leanprover/lean-action@v1
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
         with:
-          build-args: ""
+          build-args: "--wfail"
+      # delete the extra "Build project: lake build" step
