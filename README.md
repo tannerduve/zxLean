@@ -60,3 +60,7 @@ with [`Backens 2014`](https://www.cs.ox.ac.uk/people/miriam.backens/Clifford_T.p
 
 - A. Meiburg et al. *Quantum Information in Lean* (`QuantumInfo` library).  
   [`Lean-QuantumInfo`](https://github.com/Timeroot/Lean-QuantumInfo)
+
+- M. Backens, *The ZX-calculus is complete for the single-qubit
+  Clifford+T group*, 2014.  
+  [`pdf`](https://www.cs.ox.ac.uk/people/miriam.backens/Clifford_T.pdf)
