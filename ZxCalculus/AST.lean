@@ -84,9 +84,9 @@ inductive ZxTerm : ℕ → ℕ → Type where
 
 namespace ZxTerm
 
-@[inherit_doc] infixl:90 " ; " => ZxTerm.comp
+@[inherit_doc] scoped infixl:90 " ; " => ZxTerm.comp
 
-@[inherit_doc] infixl:80 " ⊗' " => ZxTerm.tens
+@[inherit_doc] scoped infixl:80 " ⊗' " => ZxTerm.tens
 
 /-! ### Smart Constructors
 
