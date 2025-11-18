@@ -58,15 +58,14 @@ quantum information framework from the `QuantumInfo` library
 
 At a high level, this directory shows that the syntactic rewrite system
 for single-qubit ZX diagrams is sound with respect to the usual
-matrix semantics of qubit quantum mechanics. Together with the
+matrix semantics of qubit quantum mechanics. Currently in progress is the
 completeness result of Backens [`Backens 2014`](https://www.cs.ox.ac.uk/people/miriam.backens/Clifford_T.pdf),
-this places the formalisation within the broader story of the
-Clifford+T ZX-calculus as a robust reasoning system for single-qubit
+and with this formalization we aim to present Clifford+T ZX-calculus as a robust reasoning system for single-qubit
 quantum circuits.
 
 ### Progress towards Backens' completeness theorem
 
-The end goal for this directory is to formalise the entirety of
+The end goal for this directory is to formalize the entirety of
 Backens' single-qubit Clifford+T result, including:
 
 - a **normal form** for single-qubit Clifford+T diagrams; and
