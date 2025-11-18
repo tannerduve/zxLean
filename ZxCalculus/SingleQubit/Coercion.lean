@@ -47,7 +47,7 @@ theorem toZxTerm_X (α : ZMod 8) :
 
 /-- The coercion preserves composition. -/
 theorem toZxTerm_comp {n m k : Bool} (A : ZxDiagram n m) (B : ZxDiagram m k) :
-    toZxTerm (A ; B) = toZxTerm A ; toZxTerm B := by
+    toZxTerm (.comp A B) = .comp (toZxTerm A) (toZxTerm B) := by
   cases n <;> cases m <;> cases k <;> rfl
 
 end Coercion

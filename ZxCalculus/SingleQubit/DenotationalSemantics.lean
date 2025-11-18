@@ -35,23 +35,13 @@ def Z_spider (α : ZMod 8) : LinMap :=
   let phase := Complex.exp (Complex.I * ((α.val : ℝ) * π) / 4)
   ![![(1 : ℂ), (0 : ℂ)], ![(0 : ℂ), phase]]
 
+/--
+X-spider with phase `α * π/4` (1 → 1).
+-/
 def X_spider (α : ZMod 8) : LinMap :=
   let phase := Complex.exp (Complex.I * ((α.val : ℝ) * π) / 4)
   ![![(1 + phase) / 2, (1 - phase) / 2],
     ![(1 - phase) / 2, (1 + phase) / 2]]
-/--
-X-spider with phase `α * π/4` (1 → 1).
-
-Matrix: `|+⟩⟨+| + e^(i·α·π/4) |-⟩⟨-|`, diagonal in the Hadamard basis.
--/
--- def X_spider (α : ZMod 8) : LinMap :=
---   let phase := ((α.val : ℝ) * π) / 4
---   let ketPlus_vec := ketToVec ketPlus
---   let ketMinus_vec := ketToVec ketMinus
---   let braPlus := ketPlus_vecᴴ
---   let braMinus := ketMinus_vecᴴ
---   -- Outer products: |+⟩⟨+| + e^(iαπ/4) |-⟩⟨-|
---   ketPlus_vec * braPlus + (Complex.exp (Complex.I * phase) • (ketMinus_vec * braMinus))
 
 -- Interpret a single-qubit ZX diagram as a 2×2 complex matrix.
 def interp {n m : Bool} (z : ZxDiagram n m) : LinMap :=
