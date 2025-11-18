@@ -21,7 +21,7 @@ noncomputable section
 
 /-! ### Type definitions -/
 
-/-- Linear maps for single-qubit diagrams (2×2 matrices). -/
+/-- Linear maps for single-qubit diagrams (2×2 complex matrices). -/
 abbrev LinMap := Matrix (Fin 2) (Fin 2) ℂ
 
 /-! ### Spider operators -/
@@ -29,9 +29,7 @@ abbrev LinMap := Matrix (Fin 2) (Fin 2) ℂ
 /--
 Z-spider with phase `α * π/4` (1 → 1).
 
-Matrix: `|0⟩⟨0| + e^(i·α·π/4) |1⟩⟨1|`
-
-This is a diagonal matrix in the computational basis.
+Matrix: `|0⟩⟨0| + e^(i·α·π/4) |1⟩⟨1|`, diagonal in the computational basis.
 -/
 def Z_spider (α : ZMod 8) : LinMap :=
   let phase := Complex.exp (Complex.I * ((α.val : ℝ) * π) / 4)
@@ -44,9 +42,7 @@ def X_spider (α : ZMod 8) : LinMap :=
 /--
 X-spider with phase `α * π/4` (1 → 1).
 
-Matrix: `|+⟩⟨+| + e^(i·α·π/4) |-⟩⟨-|`
-
-This is a diagonal matrix in the Hadamard basis.
+Matrix: `|+⟩⟨+| + e^(i·α·π/4) |-⟩⟨-|`, diagonal in the Hadamard basis.
 -/
 -- def X_spider (α : ZMod 8) : LinMap :=
 --   let phase := ((α.val : ℝ) * π) / 4
@@ -57,6 +53,7 @@ This is a diagonal matrix in the Hadamard basis.
 --   -- Outer products: |+⟩⟨+| + e^(iαπ/4) |-⟩⟨-|
 --   ketPlus_vec * braPlus + (Complex.exp (Complex.I * phase) • (ketMinus_vec * braMinus))
 
+-- Interpret a single-qubit ZX diagram as a 2×2 complex matrix.
 def interp {n m : Bool} (z : ZxDiagram n m) : LinMap :=
 match z with
 | .empty => 1

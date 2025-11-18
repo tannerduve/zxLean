@@ -33,6 +33,7 @@ lemma exp_add_zmod8 (α β : ZMod 8) :
   convert Complex.exp_periodic.int_mul k _ using 2
   ring
 
+-- Scalar equalities for the Z-π copy rule used in `soundness_z_pi_copy`.
 lemma z_pi_x_copy_entries (α : ZMod 8) :
   (1 + Complex.exp (Complex.I * ↑α.cast * ↑Real.pi * (1 / 4)) =
    Complex.exp (Complex.I * ↑Real.pi * α.cast * (1 / 4)) +
@@ -83,6 +84,7 @@ lemma z_pi_x_copy_entries (α : ZMod 8) :
       ring;
     · rw [ mul_right_comm, h_exp, one_mul ])
 
+-- Matrix identity for the X-π copy rule, used as a simp lemma.
 @[simp] lemma x_pi_copy_matrix_equality (α : ZMod 8) :
   ![![1, 0], ![0, Complex.exp (Complex.I * ↑α.cast * ↑Real.pi / 4)]] *
     ![![(1 + Complex.exp (Complex.I * ↑Real.pi)) / 2, (1 + -Complex.exp (Complex.I * ↑Real.pi)) / 2],
@@ -93,6 +95,7 @@ lemma z_pi_x_copy_entries (α : ZMod 8) :
       ![![1, 0], ![0, Complex.exp (Complex.I * ↑Real.pi * ↑(-α).cast / 4)]]) := by
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Complex.ext_iff, sq ] <;> ring_nf <;> norm_num [Complex.exp_re, Complex.exp_im]
 
+-- Remaining scalar goals for the X-π copy rule, discharged by heavy trig.
 lemma x_pi_copy_remaining_goals (α : ZMod 8) :
   (2 = Real.exp (-(Real.pi * (α.cast : ℂ).im) / 4) * Real.cos (Real.pi * (α.cast : ℂ).re / 4) * Real.cos (Real.pi * (-α).cast / 4) +
         -(Real.sin (Real.pi * (-α).cast / 4) * (Real.exp (-(Real.pi * (α.cast : ℂ).im) / 4) * Real.sin (Real.pi * (α.cast : ℂ).re / 4))) +
@@ -114,6 +117,7 @@ lemma x_pi_copy_remaining_goals (α : ZMod 8) :
     erw [ Nat.cast_succ ] ; norm_num ; ring_nf ; norm_num [ mul_div ] ;
 
 
+-- Existence of the global phase used in the X-π copy soundness proof.
 lemma x_pi_copy_scalar_exists (α : ZMod 8) :
   ∃ c : ℂ, c ≠ 0 ∧
     ![![1, 0], ![0, Complex.exp (Complex.I * (↑α.cast * ↑Real.pi) / 4)]] *
@@ -131,6 +135,7 @@ lemma x_pi_copy_scalar_exists (α : ZMod 8) :
   erw [ show ( ZMod.cast 4 : ℂ ) = 4 by rfl ] ; ring_nf; norm_num [ Complex.ext_iff, Complex.exp_re, Complex.exp_im ] ;
 
 
+-- Scalar equalities showing that H matches its Euler decomposition up to phase.
 lemma euler_matrix_entries :
   ((↑√2)⁻¹ : ℂ) = ↑√2 * (1 - Complex.I) / 2 * ((1 + Complex.exp (Complex.I * (2 * ↑Real.pi) / 4)) / 2) ∧
   (↑√2)⁻¹ = ↑√2 * (1 - Complex.I) / 2 * ((1 - Complex.exp (Complex.I * (2 * ↑Real.pi) / 4)) / 2 * Complex.exp (Complex.I * (2 * ↑Real.pi) / 4)) ∧

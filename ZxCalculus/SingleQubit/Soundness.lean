@@ -23,12 +23,6 @@ The main ingredients are:
   Euler decomposition rewrite rule.
 - `soundness`: the main theorem stating
   `ZxEquiv A B → interp A ≈ interp B`.
-
-This development follows the normal-form approach of Backens'
-completeness proof for the single-qubit Clifford+T ZX-calculus
-[`Backens 2014`](https://www.cs.ox.ac.uk/people/miriam.backens/Clifford_T.pdf),
-but focuses on **soundness** of the rewrite rules with respect to the
-matrix semantics.
 -/
 
 def EqualUpToScalar {n m : Type*} [Fintype n] [Fintype m]
@@ -89,12 +83,14 @@ end EqualUpToScalar
 @[simp] lemma zmod8_val_2 : ((2 : ZMod 8).val : ℝ) = 2 := rfl
 @[simp] lemma zmod8_val_4 : ((4 : ZMod 8).val : ℝ) = 4 := rfl
 
+-- `Z_spider 4` coincides with the usual Pauli Z gate on one qubit.
 lemma z_spider_4_eq_pauliZ : SingleQubit.Z_spider 4 = Z_gate.val := by
   simp only [SingleQubit.Z_spider, Z_gate, Qubit.Z, zmod8_val_4]
   rw [Complex.exp_eq_exp_re_mul_sin_add_cos]
   ext i j
   fin_cases i <;> fin_cases j <;> simp
 
+-- `X_spider 4` coincides with the usual Pauli X gate on one qubit.
 lemma x_spider_4_eq_pauliX : SingleQubit.X_spider 4 = X_gate.val := by
   simp only [SingleQubit.X_spider, X_gate, Qubit.X, zmod8_val_4]
   have h_exp : Complex.exp (Complex.I * (4 * Real.pi) / 4) = -1 := by
@@ -103,6 +99,7 @@ lemma x_spider_4_eq_pauliX : SingleQubit.X_spider 4 = X_gate.val := by
   simp [h_exp]
   rfl
 
+-- Z-spider with phase 0 is semantically the identity.
 lemma soundness_z_id :
     interp (Z 0) = interp id := by
   simp only [Z, SingleQubit.interp, SingleQubit.Z_spider, Matrix.vecCons, Nat.succ_eq_add_one,
@@ -111,6 +108,7 @@ lemma soundness_z_id :
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num
 
+-- X-spider with phase 0 is semantically the identity.
 lemma soundness_x_id :
   interp (X 0) = interp id := by
   simp only [X, SingleQubit.interp, SingleQubit.X_spider, Matrix.vecCons, Nat.succ_eq_add_one,
@@ -119,6 +117,7 @@ lemma soundness_x_id :
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num
 
+-- Semantic version of the "colour-change" rule turning Z into X via H.
 lemma soundness_color_change_z (α : ZMod 8):
   interp (ZxDiagram.comp (ZxDiagram.comp H (Z α)) H) = interp (X α) := by
   simp only [H, Z, X, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.Z_spider, SingleQubit.X_spider]
@@ -141,6 +140,7 @@ lemma soundness_color_change_z (α : ZMod 8):
     norm_num [← Complex.ofReal_pow]
     rw [mul_comm]
 
+-- Semantic version of the "colour-change" rule turning X into Z via H.
 lemma soundness_color_change_x (α : ZMod 8):
   interp (ZxDiagram.comp (ZxDiagram.comp H (X α)) H) = interp (Z α) := by
   simp only [H, X, Z, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.X_spider, SingleQubit.Z_spider]
@@ -150,6 +150,7 @@ lemma soundness_color_change_x (α : ZMod 8):
     ring_nf
     trivial
 
+-- Semantic version of Z-spider fusion: phases add.
 lemma soundness_z_fus (α β : ZMod 8) :
     interp (ZxDiagram.comp (Z α) (Z β)) = interp (Z (α + β)) := by
   simp [SingleQubit.interp, Z, SingleQubit.Z_spider]
@@ -168,6 +169,7 @@ lemma soundness_z_fus (α β : ZMod 8) :
   simp only [mul_comm, add_comm]
   abel
 
+-- Semantic version of X-spider fusion: phases add.
 lemma soundness_x_fus (α β : ZMod 8) :
     interp (ZxDiagram.comp (X α) (X β)) = interp (X (α + β)) := by
   simp [SingleQubit.interp, X, SingleQubit.X_spider]
@@ -176,6 +178,7 @@ lemma soundness_x_fus (α β : ZMod 8) :
   have h := exp_add_zmod8 α β
   <;> aesop
 
+-- Soundness of the `z_pi_copy` rule (π-phase copy through an X-spider).
 lemma soundness_z_pi_copy (α : ZMod 8) :
     interp (ZxDiagram.comp (Z 4) (X α)) ≈ interp (ZxDiagram.comp (X (-α)) (Z 4)) := by
   simp only [SingleQubit.interp, X, SingleQubit.X_spider, ZMod.natCast_val, Z, SingleQubit.Z_spider]
@@ -189,6 +192,7 @@ lemma soundness_z_pi_copy (α : ZMod 8) :
   · exact (z_pi_x_copy_entries α).2.2.1
   · exact (z_pi_x_copy_entries α).2.2.2
 
+-- Soundness of the `x_pi_copy` rule (π-phase copy through a Z-spider).
 lemma soundness_x_pi_copy (α : ZMod 8) :
     interp (ZxDiagram.comp (X 4) (Z α)) ≈ interp (ZxDiagram.comp (Z (-α)) (X 4)) := by
   simp [SingleQubit.interp, Z, X, SingleQubit.X_spider, SingleQubit.Z_spider, EqualUpToScalar]
@@ -216,6 +220,8 @@ lemma soundness_x_pi_copy (α : ZMod 8) :
 section EulerDecomp
 attribute [-instance] Pi.instMul
 
+-- Soundness of the Euler decomposition rule for `H`:
+-- the matrix of `H` agrees up to non-zero scalar with `Z 2 ∘ X 2 ∘ Z 2`.
 lemma soundness_euler_decomp :
     interp H ≈ interp (ZxDiagram.comp (Z 2) (ZxDiagram.comp (X 2) (Z 2))) := by
   unfold EqualUpToScalar
@@ -234,7 +240,7 @@ lemma soundness_euler_decomp :
     · exact h10
     · exact h11
 
--- end EulerDecomp
+end EulerDecomp
 
 lemma eq_upTo_of_eq {n m : Type*} [Fintype n] [Fintype m]
     (A B : Matrix n m ℂ) (h : A = B) : A ≈ B := by

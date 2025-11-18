@@ -23,7 +23,7 @@ def toZxTerm : {n m : Bool} → ZxDiagram n m → ZxTerm (boolToNat n) (boolToNa
   | true, true, .H => ZxTerm.H
   | true, true, .Z α => ZxTerm.Z α 1 1
   | true, true, .X α => ZxTerm.X α 1 1
-  | _, _, A ; B => toZxTerm A ; toZxTerm B
+  | _, _, .comp A B => .comp (toZxTerm A) (toZxTerm B)
 
 /-- Coercion instance for automatic conversion. -/
 instance {n m : Bool} : Coe (ZxDiagram n m) (ZxTerm (boolToNat n) (boolToNat m)) where

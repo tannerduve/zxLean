@@ -6,8 +6,7 @@ rewrite system, and soundness proofs, built on top of the finite‑dimensional
 quantum information framework from the `QuantumInfo` library
 ([`Lean-QuantumInfo`](https://github.com/Timeroot/Lean-QuantumInfo)).
 
-The formalization closely follows the presentation in:
-
+### Main Reference
 - M. Backens, *The ZX-calculus is complete for the single-qubit
   Clifford+T group*, 2014.  
   [`pdf`](https://www.cs.ox.ac.uk/people/miriam.backens/Clifford_T.pdf)
