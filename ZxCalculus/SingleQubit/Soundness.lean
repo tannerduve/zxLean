@@ -305,3 +305,14 @@ theorem soundness {n m : Bool} {A B : ZxDiagram n m} (h : ZxEquiv A B) :
       apply eq_upTo_of_eq
       exact @soundness_color_change_x α
     · case euler_decomp => apply soundness_euler_decomp
+    · case h_involutive =>
+      simp [SingleQubit.interp, H_gate, Qubit.H]
+      use 1
+      constructor
+      · simp
+      · ring_nf
+        ext i j; simp [Matrix.one_apply];
+        fin_cases i <;> fin_cases j <;> norm_num [ ← sq ];
+          norm_num [ ← Complex.ofReal_pow ];
+        · norm_cast
+          norm_num [ ← two_mul ]
