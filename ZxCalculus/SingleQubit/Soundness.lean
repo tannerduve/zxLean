@@ -119,7 +119,7 @@ lemma soundness_x_id :
 
 -- Semantic version of the "colour-change" rule turning Z into X via H.
 lemma soundness_color_change_z (α : ZMod 8):
-  interp (ZxDiagram.comp (ZxDiagram.comp H (Z α)) H) = interp (X α) := by
+  interp ((H ; (Z α)) ; H) = interp (X α) := by
   simp only [H, Z, X, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.Z_spider, SingleQubit.X_spider]
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num [Matrix.vecMul, Matrix.mul_apply]

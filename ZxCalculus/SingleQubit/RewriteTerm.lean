@@ -47,3 +47,60 @@ inductive ZxEquiv : {n m : Bool} → ZxDiagram n m → ZxDiagram n m → Prop wh
 | euler_decomp : ZxEquiv .H (ZxDiagram.comp (.Z 2) (ZxDiagram.comp (.X 2) (.Z 2)))
 -- Hadamard gates are self-inverse
 | h_involutive : ZxEquiv (ZxDiagram.comp .H .H) .id
+
+variable {α β : ZMod 8}
+open ZxDiagram
+
+#check (.H ; .Z α ; .H)
+
+#check ZxDiagram.X α
+
+#check ZxEquiv.color_change_z α
+
+example {α : ZMod 8} :
+    ZxEquiv (.H ; .Z α ; .H) (.X α) := by
+  apply ZxEquiv.color_change_z
+
+example {α β : ZMod 8} :
+    ZxEquiv (((.H ; (.Z α))) ; ((.Z β) ; .H)) (.X (α + β)) := by
+  -- 1. Reassociate: (H ; Z α) ; ((Z β) ; H) ≃ H ; (Z α ; (Z β ; H))
+  have h1 :
+      ZxEquiv ((.H ; (.Z α)) ; ((.Z β) ; .H))
+              (.H ; ((.Z α) ; ((.Z β) ; .H))) :=
+    ZxEquiv.assoc_comp _ _ _
+
+  -- 2. Reassociate the inner composite: Z α ; (Z β ; H) ≃ (Z α ; Z β) ; H
+  have h2 :
+      ZxEquiv (.H ; ((.Z α) ; ((.Z β) ; .H)))
+              (.H ; ((.Z α ; .Z β) ; .H)) := by
+    apply ZxEquiv.seq_cong
+    · exact ZxEquiv.refl _
+    · exact ZxEquiv.symm (ZxEquiv.assoc_comp _ _ _)
+
+  -- 3. Fuse the Z-spiders: (Z α ; Z β) ; H ≃ Z (α + β) ; H
+  have h3 :
+      ZxEquiv (.H ; ((.Z α ; .Z β) ; .H))
+              (.H ; ((.Z (α + β)) ; .H)) := by
+    apply ZxEquiv.seq_cong
+    · exact ZxEquiv.refl _
+    · apply ZxEquiv.seq_cong
+      · exact ZxEquiv.z_fus _ _
+      · exact ZxEquiv.refl _
+
+  -- 4. Reassociate to match the color_change_z pattern:
+  --    H ; (Z (α + β) ; H) ≃ (H ; Z (α + β)) ; H
+  have h4 :
+      ZxEquiv (.H ; ((.Z (α + β)) ; .H))
+              ((.H ; (.Z (α + β))) ; .H) :=
+    ZxEquiv.symm (ZxEquiv.assoc_comp _ _ _)
+
+  -- 5. Apply the color-change rule: (H ; Z (α + β)) ; H ≃ X (α + β)
+  have h5 :
+      ZxEquiv ((.H ; (.Z (α + β))) ; .H) (.X (α + β)) :=
+    ZxEquiv.color_change_z _
+
+  -- Chain all the steps
+  refine ZxEquiv.trans h1 ?_
+  refine ZxEquiv.trans h2 ?_
+  refine ZxEquiv.trans h3 ?_
+  refine ZxEquiv.trans h4 h5
