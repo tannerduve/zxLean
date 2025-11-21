@@ -42,7 +42,7 @@ inductive ZxDiagram : Bool → Bool → Type where
   /-- Sequential composition of diagrams -/
   | comp {n m k : Bool} (A : ZxDiagram n m) (B : ZxDiagram m k) : ZxDiagram n k
 
-@[inherit_doc] scoped infixl:90 " ∘ " => ZxDiagram.comp
+@[inherit_doc] scoped infixl:80 " ; " => ZxDiagram.comp
 
 /-! ### Smart constructors -/
 
@@ -71,6 +71,6 @@ def dagger {n m : Bool} : ZxDiagram n m → ZxDiagram m n
   | .H => .H
   | .Z α => .Z (-α)
   | .X α => .X (-α)
-  | .comp A B => (dagger B) ∘ (dagger A)
+  | A ; B => (dagger B) ; (dagger A)
 
 end SingleQubit
