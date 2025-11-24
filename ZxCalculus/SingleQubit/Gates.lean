@@ -1,5 +1,6 @@
 import ZxCalculus.SingleQubit.RewriteTerm
 
+
 open SingleQubit
 
 /-- Rz(θ): Z-rotation by angle θ·π -/
