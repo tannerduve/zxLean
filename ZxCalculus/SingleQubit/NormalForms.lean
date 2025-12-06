@@ -114,7 +114,7 @@ inductive RightForm : ZxDiagram true true → Prop
 
 /-- Lemma 1 (Backens): every Clifford+T operator has a unique
 representation in both left and right normal forms. -/
-theorem lemma1_unique_representation (C : ZxDiagram true true) :
+theorem lemma1_unique_representation (C : ZxDiagram true true) (hC : Clifford C):
     (∃! d, LeftForm d ∧ ZxEquiv C d) ∧
       (∃! d, RightForm d ∧ ZxEquiv C d) :=
   sorry
@@ -188,4 +188,5 @@ theorem theorem5_normal_form
     LeftForm D ∨
       ∃ d, NormalForm d ∧ ZxEquiv D d := by
   sorry
+
 end SingleQubit
