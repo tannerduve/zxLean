@@ -2,7 +2,7 @@ import QuantumInfo.Finite.Braket
 import QuantumInfo.Finite.Qubit.Basic
 import QuantumInfo.ForMathlib.Matrix
 import ZxCalculus.AST
-import Mathlib.Data.Matrix.Kronecker
+import Mathlib.LinearAlgebra.Matrix.Kronecker
 
 /-!
 # Denotational semantics for the ZX-calculus

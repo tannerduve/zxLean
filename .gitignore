@@ -16,3 +16,5 @@ lake-packages/
 *~
 
 *.DS_Store
+
+ZxCalculus/SingleQubit/lemmas.lean

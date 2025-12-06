@@ -45,3 +45,5 @@ inductive ZxEquiv : {n m : Bool} → ZxDiagram n m → ZxDiagram n m → Prop wh
 | color_change_x : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (ZxDiagram.comp .H (.X α)) .H) (.Z α)
 -- Euler decomposition for H in the Clifford+T fragment.
 | euler_decomp : ZxEquiv .H (ZxDiagram.comp (.Z 2) (ZxDiagram.comp (.X 2) (.Z 2)))
+-- Hadamard gates are self-inverse
+| h_involutive : ZxEquiv (ZxDiagram.comp .H .H) .id

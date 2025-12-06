@@ -2,6 +2,8 @@ import ZxCalculus.AST
 import ZxCalculus.RewriteTerm
 import ZxCalculus.DenotationalSemantics
 
+set_option linter.unusedSimpArgs false
+
 /-!
 # Quantum Gates
 
@@ -104,6 +106,8 @@ theorem T_gate_sound : interp T = T_gate := by
   have h_cos_sin : Real.cos (Real.pi / 4) = 1 / Real.sqrt 2 ∧ Real.sin (Real.pi / 4) = 1 / Real.sqrt 2 := by
     -- By definition of reciprocal, we know that $(\sqrt{2})^{-1} = \frac{1}{\sqrt{2}}$.
     field_simp;
+    aesop
+    sorry
   aesop ; ring_nf;
   convert h_euler using 1 <;> push_cast [ ZMod.cast ] <;> ring_nf!;
   norm_num [ ZMod.val ]

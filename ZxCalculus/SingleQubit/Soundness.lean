@@ -119,7 +119,7 @@ lemma soundness_x_id :
 
 -- Semantic version of the "colour-change" rule turning Z into X via H.
 lemma soundness_color_change_z (α : ZMod 8):
-  interp (ZxDiagram.comp (ZxDiagram.comp H (Z α)) H) = interp (X α) := by
+  interp ((H ; (Z α)) ; H) = interp (X α) := by
   simp only [H, Z, X, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.Z_spider, SingleQubit.X_spider]
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num [Matrix.vecMul, Matrix.mul_apply]
@@ -305,3 +305,14 @@ theorem soundness {n m : Bool} {A B : ZxDiagram n m} (h : ZxEquiv A B) :
       apply eq_upTo_of_eq
       exact @soundness_color_change_x α
     · case euler_decomp => apply soundness_euler_decomp
+    · case h_involutive =>
+      simp [SingleQubit.interp, H_gate, Qubit.H]
+      use 1
+      constructor
+      · simp
+      · ring_nf
+        ext i j; simp [Matrix.one_apply];
+        fin_cases i <;> fin_cases j <;> norm_num [ ← sq ];
+          norm_num [ ← Complex.ofReal_pow ];
+        · norm_cast
+          norm_num [ ← two_mul ]
