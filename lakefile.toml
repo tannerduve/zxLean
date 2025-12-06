@@ -13,20 +13,20 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "d62eab0cc36ea522904895389c301cf8d844fd69" 
+rev = "d9d1cc1012eccfc8d01215b1b7943b0e7f8b7757"
+
+[[require]]
+name = "Parser"
+git = "https://github.com/fgdorais/lean4-parser"
+rev = "185d6a66e625502e2760f1a001dd8a0b64b98ac0"
+
+[[require]]
+name = "quantumInfo"
+git = "https://github.com/Timeroot/Lean-QuantumInfo.git"
+rev = "bf347dc9538097f0b7fd4123fa21266198348020"
 
 [[lean_lib]]
 name = "ZxCalculus"
 
 [[lean_lib]]
 name = "tests"
-
-[[require]]
-name = "Parser"
-git = "https://github.com/fgdorais/lean4-parser"
-rev = "9cfe6f912bbb5ce5ad1e06d1b58a30bddae82e63"
-
-[[require]]
-name = "quantumInfo"
-git = "https://github.com/Timeroot/Lean-QuantumInfo.git"
-rev = "7304e98727a411c246899f361b77ca529b31c9a8"
