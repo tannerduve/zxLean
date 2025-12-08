@@ -114,9 +114,10 @@ inductive RightForm : ZxDiagram true true → Prop
 
 /-- Lemma 1 (Backens): every Clifford+T operator has a unique
 representation in both left and right normal forms. -/
-theorem lemma1_unique_representation (C : ZxDiagram true true) (hC : Clifford C):
+theorem lemma1_unique_representation (C : ZxDiagram true true) (hC : Clifford C) :
     (∃! d, LeftForm d ∧ ZxEquiv C d) ∧
       (∃! d, RightForm d ∧ ZxEquiv C d) :=
+  by
   sorry
 
 /-- Lemma 2 (Backens): every operator of the form `T ∘ C` has a unique

@@ -4,7 +4,8 @@ import ZxCalculus.AST
 
 This file defines the diagram syntax for the single-qubit fragment of the π / 4 ZX-calculus
 
-The type `ZxDiagram n m` represents a diagram with strictly one or zero input wires, where `n` and `m` are booleans representing the presence of a wire.
+The type `ZxDiagram n m` represents a diagram with strictly one or zero input wires,
+where `n` and `m` are booleans representing the presence of a wire.
 
 * `false` = 0 wires
 * `true`  = 1 wire

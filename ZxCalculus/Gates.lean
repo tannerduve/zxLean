@@ -84,11 +84,25 @@ theorem S_gate_sound : interp S = S_gate := by
   have h_angle : Complex.I * (2 * Real.pi / 4) = Complex.I * (Real.pi / 2) := by
     -- Simplify the expression $2 * \pi / 4$ to $\pi / 2$.
     ring_nf;
-  -- Using Euler's formula, we know that $e^{i\pi/2} = \cos(\pi/2) + i\sin(\pi/2) = 0 + i \cdot 1 = i$.
-  have h_euler : Complex.exp (Complex.I * (Real.pi / 2)) = Complex.cos (Real.pi / 2) + Complex.sin (Real.pi / 2) * Complex.I := by
+  have h_euler : Complex.exp (Complex.I * (Real.pi / 2)) =
+    Complex.cos (Real.pi / 2) + Complex.sin (Real.pi / 2) * Complex.I := by
     rw [ ← Complex.exp_mul_I, mul_comm ];
   convert h_euler using 1 <;> norm_num [ h_angle ];
   congr! 1
+
+open Real
+lemma sqrt_two_over_two_mul_sqrt_two : sqrt 2 / 2 * sqrt 2 = (1 : ℝ) := by
+  have hnonneg : (0 : ℝ) ≤ 2 := by norm_num
+  calc
+    sqrt 2 / 2 * sqrt 2
+        = sqrt 2 * sqrt 2 / 2 := by
+          field_simp [div_eq_mul_inv, mul_comm, mul_left_comm, mul_assoc]
+    _   = 2 / 2 := by
+          simp [Real.mul_self_sqrt hnonneg]
+    _   = 1 := by norm_num
+
+lemma sqrt_two_mul_sqrt_two_over_two : sqrt 2 * (sqrt 2 / 2) = (1 : ℝ) := by
+  simpa [mul_comm] using sqrt_two_over_two_mul_sqrt_two
 
 theorem T_gate_sound : interp T = T_gate := by
   simp only [T, Rz, Z, interp, interpGen, Z_spider, qubitSpaceToVec]
@@ -98,17 +112,22 @@ theorem T_gate_sound : interp T = T_gate := by
     Ket.basis, qubitSpaceEquiv, Matrix.mul_apply
   ]
   -- Apply Euler's formula to rewrite the exponential in terms of sine and cosine.
-  have h_euler : Complex.exp (Complex.I * (1 * Real.pi / 4)) = Real.cos (Real.pi / 4) + Complex.I * Real.sin (Real.pi / 4) := by
+  have h_euler : Complex.exp (Complex.I * (1 * Real.pi / 4)) =
+    Real.cos (Real.pi / 4) + Complex.I * Real.sin (Real.pi / 4) := by
     norm_num [ Complex.ext_iff ];
-    -- Since $\cos(\pi/4) = \sin(\pi/4) = \frac{\sqrt{2}}{2}$, we can substitute these values into the conjunction.
     simp [Complex.cos, Complex.sin, Complex.exp_re, Complex.exp_im];
-  -- Substitute the known values of $\cos(\pi/4)$ and $\sin(\pi/4)$ into Euler's formula.
-  have h_cos_sin : Real.cos (Real.pi / 4) = 1 / Real.sqrt 2 ∧ Real.sin (Real.pi / 4) = 1 / Real.sqrt 2 := by
+  have h_cos_sin : Real.cos (Real.pi / 4) =
+    1 / Real.sqrt 2 ∧ Real.sin (Real.pi / 4) = 1 / Real.sqrt 2 := by
     -- By definition of reciprocal, we know that $(\sqrt{2})^{-1} = \frac{1}{\sqrt{2}}$.
     field_simp;
-    aesop
-    sorry
-  aesop ; ring_nf;
+    simp_all only [one_mul, Real.cos_pi_div_four, Complex.ofReal_div,
+    Complex.ofReal_ofNat, Real.sin_pi_div_four]
+    apply And.intro
+    · apply sqrt_two_over_two_mul_sqrt_two
+    · apply sqrt_two_mul_sqrt_two_over_two
+  simp_all only [one_mul, one_div, Complex.ofReal_inv,
+  Real.cos_pi_div_four, Real.sin_pi_div_four, and_self]
+  ring_nf;
   convert h_euler using 1 <;> push_cast [ ZMod.cast ] <;> ring_nf!;
   norm_num [ ZMod.val ]
 

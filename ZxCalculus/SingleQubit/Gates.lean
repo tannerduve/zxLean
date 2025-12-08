@@ -1,4 +1,5 @@
 import ZxCalculus.SingleQubit.RewriteTerm
+import QuantumInfo.Finite.Qubit.Basic
 
 
 open SingleQubit
@@ -24,3 +25,24 @@ def PauliZ : ZxDiagram true true := Rz 4
 Paulix X gate: An X spider with phase π
 -/
 def PauliX : ZxDiagram true true := Rx 4
+
+/-! ### Single–qubit gates -/
+
+noncomputable section
+
+/-- Hadamard gate. -/
+def H_gate : 𝐔[Fin 2] := Qubit.H
+
+/-- Pauli `X` gate. -/
+def X_gate : 𝐔[Fin 2] := Qubit.X
+
+/-- Pauli `Z` gate. -/
+def Z_gate : 𝐔[Fin 2] := Qubit.Z
+
+def S_gate : 𝐔[Fin 2] := Qubit.S
+
+def T_gate : 𝐔[Fin 2] := Qubit.T
+
+/-- Extract the underlying matrix from a unitary. -/
+def unitaryToMatrix {d : Type*} [Fintype d] [DecidableEq d] (U : 𝐔[d]) : Matrix d d ℂ :=
+  U.val
