@@ -1,8 +1,13 @@
 import ZxCalculus.SingleQubit.MatrixLemmas
+import ZxCalculus.SingleQubit.DenotationalSemantics
+import ZxCalculus.SingleQubit.RewriteTerm
 
 open Matrix
 
 set_option linter.unusedTactic false
+set_option linter.style.multiGoal false
+set_option linter.style.setOption false
+set_option maxHeartbeats 2000000
 open SingleQubit
 
 /-!
@@ -118,15 +123,19 @@ lemma soundness_x_id :
   fin_cases i <;> fin_cases j <;> norm_num
 
 -- Semantic version of the "colour-change" rule turning Z into X via H.
-lemma soundness_color_change_z (α : ZMod 8):
+lemma soundness_color_change_z (α : ZMod 8) :
   interp ((H ; (Z α)) ; H) = interp (X α) := by
-  simp only [H, Z, X, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.Z_spider, SingleQubit.X_spider]
+  simp only [H, Z, X, SingleQubit.interp,
+  H_gate, Qubit.H, SingleQubit.Z_spider, SingleQubit.X_spider]
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num [Matrix.vecMul, Matrix.mul_apply]
   · ring_nf
     field_simp
     ring_nf
-    exact Or.inl <| mod_cast by norm_num
+    norm_cast
+    ring_nf
+    simp [mul_comm, mul_left_comm];
+    ring_nf at *;
   · ring_nf
     norm_num [← Complex.ofReal_pow]
     ring
@@ -136,16 +145,21 @@ lemma soundness_color_change_z (α : ZMod 8):
     norm_num [sq, Complex.exp_re, Complex.exp_im]
     ring_nf
     norm_num
+    norm_cast
+    norm_num
+    ring
   · ring_nf
     norm_num [← Complex.ofReal_pow]
     rw [mul_comm]
 
 -- Semantic version of the "colour-change" rule turning X into Z via H.
-lemma soundness_color_change_x (α : ZMod 8):
+lemma soundness_color_change_x (α : ZMod 8) :
   interp (ZxDiagram.comp (ZxDiagram.comp H (X α)) H) = interp (Z α) := by
-  simp only [H, X, Z, SingleQubit.interp, H_gate, Qubit.H, SingleQubit.X_spider, SingleQubit.Z_spider]
+  simp only [H, X, Z, SingleQubit.interp, H_gate, Qubit.H,
+  SingleQubit.X_spider, SingleQubit.Z_spider]
   ext i j
-  fin_cases i <;> fin_cases j <;> norm_num [Complex.ext_iff, Matrix.mul_apply] <;> ring_nf <;> norm_num [Complex.exp_re, Complex.exp_im]
+  fin_cases i <;> fin_cases j <;> norm_num [Complex.ext_iff,
+  Matrix.mul_apply] <;> ring_nf <;> norm_num [Complex.exp_re, Complex.exp_im]
   · norm_num [Matrix.vecMul, Matrix.mulVec]
     ring_nf
     trivial
@@ -157,12 +171,16 @@ lemma soundness_z_fus (α β : ZMod 8) :
   ext i j
   fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply ] ; ring_nf;
   rw [←Complex.exp_add];
-  have h_diff : ∃ k : ℤ, Complex.I * Real.pi * (β.cast + α.cast - (α + β).cast) * (1 / 4) = 2 * Real.pi * Complex.I * k := by
+  have h_diff : ∃ k : ℤ, Complex.I * Real.pi *
+  (β.cast + α.cast - (α + β).cast) * (1 / 4) = 2 * Real.pi * Complex.I * k := by
     use ((β.cast + α.cast - (α + β).cast) / 8)
     rw [ Int.cast_div ] <;> norm_num ; ring_nf;
     fin_cases α <;> fin_cases β <;> trivial;
-  obtain ⟨k, hk⟩ : ∃ k : ℤ, Complex.I * Real.pi * (β.cast + α.cast - (α + β).cast) * (1 / 4) = 2 * Real.pi * Complex.I * k := h_diff
-  have h_exp_eq : Complex.exp (Complex.I * β.cast * Real.pi * (1 / 4) + Complex.I * Real.pi * α.cast * (1 / 4)) = Complex.exp (Complex.I * Real.pi * (α + β).cast * (1 / 4) + 2 * Real.pi * Complex.I * k) := by
+  obtain ⟨k, hk⟩ : ∃ k : ℤ, Complex.I * Real.pi *
+  (β.cast + α.cast - (α + β).cast) * (1 / 4) = 2 * Real.pi * Complex.I * k := h_diff
+  have h_exp_eq : Complex.exp (Complex.I * β.cast *
+  Real.pi * (1 / 4) + Complex.I * Real.pi * α.cast * (1 / 4)) =
+  Complex.exp (Complex.I * Real.pi * (α + β).cast * (1 / 4) + 2 * Real.pi * Complex.I * k) := by
     exact congr_arg Complex.exp ( by linear_combination hk )
   erw [h_exp_eq]
   convert Complex.exp_periodic.int_mul k _ using 2
@@ -186,11 +204,12 @@ lemma soundness_z_pi_copy (α : ZMod 8) :
   constructor
   · simp
   ext i j
-  fin_cases i <;> fin_cases j <;> norm_num [Matrix.mul_apply] <;> field_simp <;> ring_nf <;> norm_cast
+  fin_cases i <;> fin_cases j <;>
+  norm_num [Matrix.mul_apply] <;> field_simp <;> ring_nf <;> norm_cast
   · exact (z_pi_x_copy_entries α).1
   · exact (z_pi_x_copy_entries α).2.1
   · exact (z_pi_x_copy_entries α).2.2.1
-  · exact (z_pi_x_copy_entries α).2.2.2
+  · apply (z_pi_x_copy_entries α).left
 
 -- Soundness of the `x_pi_copy` rule (π-phase copy through a Z-spider).
 lemma soundness_x_pi_copy (α : ZMod 8) :
@@ -209,9 +228,8 @@ lemma soundness_x_pi_copy (α : ZMod 8) :
       norm_num [Complex.exp_re, Complex.exp_im]
     field_simp
     have ⟨h1, h2⟩ := (x_pi_copy_remaining_goals α).1
-    · exact ⟨h1, h2⟩
-    · have ⟨h3, h4⟩ := (x_pi_copy_remaining_goals α).2
-      exact ⟨h3, h4⟩
+    · apply And.intro <;> (ring_nf at *; linarith)
+    · exact (x_pi_copy_remaining_goals α).2
 
 @[simp] lemma zmod_val_two :
   Complex.ofReal (@Nat.cast ℝ _ (ZMod.val (2 : ZMod 8))) = 2 := by
@@ -225,7 +243,8 @@ attribute [-instance] Pi.instMul
 lemma soundness_euler_decomp :
     interp H ≈ interp (ZxDiagram.comp (Z 2) (ZxDiagram.comp (X 2) (Z 2))) := by
   unfold EqualUpToScalar
-  simp only [SingleQubit.interp, H, Z, X, SingleQubit.Z_spider, SingleQubit.X_spider, H_gate, Qubit.H]
+  simp only [SingleQubit.interp, H, Z, X,
+  SingleQubit.Z_spider, SingleQubit.X_spider, H_gate, Qubit.H]
   use (Real.sqrt 2 * (1 - Complex.I)) / 2
   constructor
   · norm_num [Complex.ext_iff]
@@ -259,14 +278,14 @@ theorem soundness {n m : Bool} {A B : ZxDiagram n m} (h : ZxEquiv A B) :
     · case trans n' m' f g h a₁ a₂ ih₁ ih₂ =>
       apply EqualUpToScalar.trans ih₁ ih₂
     · case seq_cong n k m f₁ f₂ g₁ g₂ a₁ a₂ ih₁ ih₂ =>
-      cases' ih₁ with w₁ hw₁
-      cases' ih₂ with w₂ hw₂
+      obtain ⟨w₁, hw₁⟩ := ih₁
+      obtain ⟨w₂, hw₂⟩ := ih₂
       simp [SingleQubit.interp];
       rw [hw₁.2, hw₂.2]
       use w₁ • w₂
       constructor
       · aesop
-      · simp [Matrix.mul_smul, smul_mul_assoc, smul_smul]
+      · simp [smul_smul]
     · case assoc_comp n k l m f g h =>
       simp [SingleQubit.interp, Matrix.mul_assoc];
       rfl
@@ -313,6 +332,6 @@ theorem soundness {n m : Bool} {A B : ZxDiagram n m} (h : ZxEquiv A B) :
       · ring_nf
         ext i j; simp [Matrix.one_apply];
         fin_cases i <;> fin_cases j <;> norm_num [ ← sq ];
-          norm_num [ ← Complex.ofReal_pow ];
+        · norm_num [ ← Complex.ofReal_pow ];
         · norm_cast
           norm_num [ ← two_mul ]

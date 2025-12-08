@@ -52,3 +52,7 @@ match z with
 | .X α => X_spider α
 | .H => H_gate.val
 | .comp f g => interp g * interp f
+
+end
+
+end SingleQubit

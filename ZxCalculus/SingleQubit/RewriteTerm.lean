@@ -38,8 +38,10 @@ inductive ZxEquiv : {n m : Bool} → ZxDiagram n m → ZxDiagram n m → Prop wh
 | z_fus : ∀ (α β : ZMod 8), ZxEquiv (ZxDiagram.comp (.Z α) (.Z β)) (.Z (α + β))
 | x_fus : ∀ (α β : ZMod 8), ZxEquiv (ZxDiagram.comp (.X α) (.X β)) (.X (α + β))
 -- π-copy rules: a phase-π spider can be copied through the opposite colour.
-| z_pi_copy : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (.Z 4) (.X α)) (ZxDiagram.comp (.X (-α)) (.Z 4))
-| x_pi_copy : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (.X 4) (.Z α)) (ZxDiagram.comp (.Z (-α)) (.X 4))
+| z_pi_copy : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (.Z 4) (.X α))
+  (ZxDiagram.comp (.X (-α)) (.Z 4))
+| x_pi_copy : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (.X 4) (.Z α))
+  (ZxDiagram.comp (.Z (-α)) (.X 4))
 -- Colour-change: conjugation by H swaps Z and X.
 | color_change_z : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (ZxDiagram.comp .H (.Z α)) .H) (.X α)
 | color_change_x : ∀ (α : ZMod 8), ZxEquiv (ZxDiagram.comp (ZxDiagram.comp .H (.X α)) .H) (.Z α)
