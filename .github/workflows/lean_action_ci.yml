@@ -25,3 +25,5 @@ jobs:
         with:
           build-args: "ZxCalculus"
       - uses: leanprover-community/docgen-action@v1
+        with:
+          use-github-cache: false
