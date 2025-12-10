@@ -19,3 +19,5 @@ jobs:
       - uses: leanprover/lean-action@v1
         with:
           build-args: "ZxCalculus"
+          use-github-cache: false
+    
