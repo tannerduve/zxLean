@@ -1,4 +1,4 @@
-import ZxCalculus.RewriteTerm
+import ZxCalculus.MultiQubit.RewriteTerm
 open ZxTerm Real
 
 theorem z_fusion : ZxEquiv (Z 2 1 1 ; Z 2 1 1) (Z 4 1 1) := by

@@ -1,4 +1,4 @@
-import ZxCalculus.RewriteTerm
+import ZxCalculus.MultiQubit.RewriteTerm
 open ZxTerm Real
 
 /-- Hadamard conjugation converts Z to X -/

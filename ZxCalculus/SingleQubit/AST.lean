@@ -1,4 +1,4 @@
-import ZxCalculus.AST
+import ZxCalculus.MultiQubit.AST
 /-!
 # Single-qubit ZX diagrams
 

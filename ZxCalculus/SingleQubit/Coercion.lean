@@ -1,5 +1,5 @@
 import ZxCalculus.SingleQubit.AST
-import ZxCalculus.AST
+import ZxCalculus.MultiQubit.AST
 
 /-!
 # Coercion from single-qubit to n-ary ZX diagrams

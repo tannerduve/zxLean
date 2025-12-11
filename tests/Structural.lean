@@ -1,4 +1,4 @@
-import ZxCalculus.RewriteTerm
+import ZxCalculus.MultiQubit.RewriteTerm
 open ZxTerm Real
 
 /-- Composition is associative -/

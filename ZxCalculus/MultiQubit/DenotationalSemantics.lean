@@ -1,7 +1,7 @@
 import QuantumInfo.Finite.Braket
 import QuantumInfo.Finite.Qubit.Basic
 import QuantumInfo.ForMathlib.Matrix
-import ZxCalculus.AST
+import ZxCalculus.MultiQubit.AST
 import Mathlib.LinearAlgebra.Matrix.Kronecker
 
 /-!

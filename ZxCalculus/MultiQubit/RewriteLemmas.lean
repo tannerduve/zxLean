@@ -1,5 +1,5 @@
-import ZxCalculus.RewriteTerm
-import ZxCalculus.Gates
+import ZxCalculus.MultiQubit.RewriteTerm
+import ZxCalculus.MultiQubit.Gates
 open ZxTerm Real ZxEquiv
 
 /-

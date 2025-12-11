@@ -1,5 +1,5 @@
--- import ZxCalculus.DenotationalSemantics
--- import ZxCalculus.RewriteTerm
+-- import ZxCalculus.MultiQubit.DenotationalSemantics
+-- import ZxCalculus.MultiQubit.RewriteTerm
 -- import Mathlib.Data.Matrix.Mul
 
 -- open scoped Zx

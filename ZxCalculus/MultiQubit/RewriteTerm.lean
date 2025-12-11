@@ -18,7 +18,7 @@ The ZX-calculus equivalence includes:
 4. **ZX-specific rules**: spider fusion, color change (Hadamard conjugation), π-copy rules
 -/
 
-import ZxCalculus.AST
+import ZxCalculus.MultiQubit.AST
 import Mathlib.Logic.Relation
 open Real Relation ZxTerm
 

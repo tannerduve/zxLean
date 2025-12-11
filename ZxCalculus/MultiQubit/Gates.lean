@@ -1,6 +1,6 @@
-import ZxCalculus.AST
-import ZxCalculus.RewriteTerm
-import ZxCalculus.DenotationalSemantics
+import ZxCalculus.MultiQubit.AST
+import ZxCalculus.MultiQubit.RewriteTerm
+import ZxCalculus.MultiQubit.DenotationalSemantics
 
 set_option linter.unusedSimpArgs false
 

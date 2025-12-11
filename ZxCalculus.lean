@@ -1,2 +1,2 @@
-import ZxCalculus.Basic
-import ZxCalculus.Gates
+import ZxCalculus.MultiQubit.Basic
+import ZxCalculus.MultiQubit.Gates

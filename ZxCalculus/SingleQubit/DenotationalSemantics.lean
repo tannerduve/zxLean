@@ -1,4 +1,4 @@
-import ZxCalculus.DenotationalSemantics
+import ZxCalculus.MultiQubit.DenotationalSemantics
 import ZxCalculus.SingleQubit.AST
 
 /-!
