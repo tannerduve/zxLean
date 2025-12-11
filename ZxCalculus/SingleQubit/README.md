@@ -45,6 +45,9 @@ quantum information framework from the `QuantumInfo` library
   case analysis on `ZxEquiv` and uses the analytic facts from
   `MatrixLemmas`.
 
+- `NormalForms.lean`
+  Main results of the paper - in progress. Completeness and normalization theorems with supporting lemmas. Aiming to derive normalization algorithm,
+
 - `Coercion.lean`  
   Provides a coercion from single-qubit diagrams into the general
   `ZxTerm` syntax of the full ZX-calculus, preserving generators and
