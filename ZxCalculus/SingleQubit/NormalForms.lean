@@ -149,14 +149,276 @@ lemma exists_Clifford' (d : ZxDiagram true true)
       rename_i d₁ d₂
       simp [Clifford'.toZxDiagram, hd₁', hd₂']
 
-/-- Number of Z/X spiders in a single-qubit diagram. -/
-def spiderCount : {n m : Bool} → ZxDiagram n m → ℕ
+/-- Number of nodes in a single-qubit diagram. -/
+def nodeCount : {n m : Bool} → ZxDiagram n m → ℕ
   | _, _, .id        => 0
   | _, _, .empty     => 0
-  | _, _, .H         => 0
+  | _, _, .H         => 1
   | _, _, .Z _       => 1
   | _, _, .X _       => 1
-  | _, _, .comp d₁ d₂ => spiderCount d₁ + spiderCount d₂
+  | _, _, .comp d₁ d₂ => nodeCount d₁ + nodeCount d₂
+
+/-! ### Green/red fragment -/
+
+/-- Predicate: diagram built only from Z- and X-spiders and composition. -/
+inductive IsGreenRed : ZxDiagram true true → Prop
+  | Z (α : ZMod 8) : IsGreenRed (.Z α)
+  | X (β : ZMod 8) : IsGreenRed (.X β)
+  | comp {d₁ d₂} : IsGreenRed d₁ → IsGreenRed d₂ → IsGreenRed (d₁ ; d₂)
+
+/-- Syntactic fragment containing only green (Z) and red (X) spiders. -/
+inductive GreenRed : Type where
+  | Z (α : ZMod 8) : GreenRed
+  | X (β : ZMod 8) : GreenRed
+  | comp (d₁ : GreenRed) (d₂ : GreenRed) : GreenRed
+
+/-- Interpret a syntactic green/red diagram as a `ZxDiagram`. -/
+def GreenRed.toZxDiagram : GreenRed → ZxDiagram true true
+  | .Z α => .Z α
+  | .X β => .X β
+  | .comp d₁ d₂ => (GreenRed.toZxDiagram d₁) ; (GreenRed.toZxDiagram d₂)
+
+/-- Coercion instance from the green/red fragment to `ZxDiagram`. -/
+instance : Coe GreenRed (ZxDiagram true true) where
+  coe := GreenRed.toZxDiagram
+
+namespace GreenRed
+
+/-- Number of green/red spiders in a diagram. -/
+def nodes : GreenRed → ℕ := nodeCount ∘ (↑· : GreenRed → ZxDiagram true true)
+
+lemma nodeCount_coe (d : GreenRed) :
+  nodeCount (d : ZxDiagram true true) = nodes d := by
+  rfl
+
+/-- Local reduction cases from Backens' Lemma 1, viewed as global
+diagrams with explicit left/right green–red contexts.
+
+Each constructor corresponds to one of the four bullets in the proof:
+1. two adjacent spiders of the same colour (`sameColourZ`/`sameColourX`);
+2. a 0-phase spider (`zeroPhaseZ`/`zeroPhaseX`);
+3. a π-phase spider next to an opposite-colour spider (`piZ_X`/`piX_Z`);
+4. three adjacent spiders with phases in `{±π/2}` and alternating colours
+   (`tripleZXZ`, `tripleXZX`). -/
+inductive Case : ZxDiagram true true → Prop
+  | sameColourZ
+      (L R : ZxDiagram true true) (α β : ZMod 8) :
+      Case (L ; .Z α ; .Z β ; R)
+  | sameColourX
+      (L R : ZxDiagram true true) (α β : ZMod 8) :
+      Case (L ; .X α ; .X β ; R)
+  | zeroPhaseZ
+      (L R : ZxDiagram true true) :
+      Case (L ; .Z 0 ; R)
+  | zeroPhaseX
+      (L R : ZxDiagram true true) :
+      Case (L ; .X 0 ; R)
+  | piZ_X
+      (L R : ZxDiagram true true) (α : ZMod 8) :
+      -- Z π followed by X α
+      Case (L ; .Z 4 ; .X α ; R)
+  | piX_Z
+      (L R : ZxDiagram true true) (α : ZMod 8) :
+      -- X π followed by Z α
+      Case (L ; .X 4 ; .Z α ; R)
+  | tripleZXZ
+      (L R : ZxDiagram true true)
+      (a b c : ZMod 8) :
+      -- three adjacent spiders Z–X–Z, typically with a,b,c ∈ {2,6}
+      Case (L ; .Z a ; .X b ; .Z c ; R)
+  | tripleXZX
+      (L R : ZxDiagram true true)
+      (a b c : ZMod 8) :
+      -- three adjacent spiders X–Z–X, typically with a,b,c ∈ {2,6}
+      Case (L ; .X a ; .Z b ; .X c ; R)
+
+/-- Syntactic fragment for the four local cases, built from green–red
+contexts and concrete phases. -/
+inductive Case' : Type where
+  | sameColourZ
+      (L : GreenRed) (α β : ZMod 8) (R : GreenRed)
+  | sameColourX
+      (L : GreenRed) (α β : ZMod 8) (R : GreenRed)
+  | zeroPhaseZ
+      (L R : GreenRed)
+  | zeroPhaseX
+      (L R : GreenRed)
+  | piZ_X
+      (L : GreenRed) (α : ZMod 8) (R : GreenRed)
+  | piX_Z
+      (L : GreenRed) (α : ZMod 8) (R : GreenRed)
+  | tripleZXZ
+      (L : GreenRed) (a b c : ZMod 8) (R : GreenRed)
+  | tripleXZX
+      (L : GreenRed) (a b c : ZMod 8) (R : GreenRed)
+
+/-- Interpret a syntactic case as a `GreenRed` diagram. -/
+def Case'.toGreenRed : Case' → GreenRed
+  | .sameColourZ L α β R =>
+      .comp L (.comp (.Z α) (.comp (.Z β) R))
+  | .sameColourX L α β R =>
+      .comp L (.comp (.X α) (.comp (.X β) R))
+  | .zeroPhaseZ L R =>
+      .comp L (.comp (.Z 0) R)
+  | .zeroPhaseX L R =>
+      .comp L (.comp (.X 0) R)
+  | .piZ_X L α R =>
+      .comp L (.comp (.Z 4) (.comp (.X α) R))
+  | .piX_Z L α R =>
+      .comp L (.comp (.X 4) (.comp (.Z α) R))
+  | .tripleZXZ L a b c R =>
+      .comp L (.comp (.Z a) (.comp (.X b) (.comp (.Z c) R)))
+  | .tripleXZX L a b c R =>
+      .comp L (.comp (.X a) (.comp (.Z b) (.comp (.X c) R)))
+
+/-- Interpret a syntactic case as a `ZxDiagram`. -/
+def Case'.toZxDiagram : Case' → ZxDiagram true true :=
+  GreenRed.toZxDiagram ∘ Case'.toGreenRed
+
+/-- Coercion from `Case'` to `ZxDiagram`. -/
+instance : Coe Case' (ZxDiagram true true) where
+  coe := Case'.toZxDiagram
+
+/-- The coercion image of a `Case'` diagram satisfies the semantic
+`Case` predicate. -/
+lemma coe_isCase (c : Case') :
+  Case (c : ZxDiagram true true) := by
+  cases c with
+  | sameColourZ L α β R =>
+      -- goal: `Case ((L:ZxDiagram) ; Z α ; Z β ; (R:ZxDiagram))`
+      sorry
+  | sameColourX L α β R =>
+      sorry
+  | zeroPhaseZ L R =>
+      sorry
+  | zeroPhaseX L R =>
+      sorry
+  | piZ_X L α R =>
+      sorry
+  | piX_Z L α R =>
+      sorry
+  | tripleZXZ L a b c R =>
+      sorry
+  | tripleXZX L a b c R =>
+      sorry
+
+/-- If a `ZxDiagram` is in one of the four local green/red cases,
+then it is the coercion image of a `Case'` diagram. -/
+lemma exists_Case' {d : ZxDiagram true true}
+    (h : Case d) :
+  ∃ c : Case', (c : ZxDiagram true true) = d := by
+  cases h with
+  | sameColourZ L R α β =>
+      refine ⟨Case'.sameColourZ (L := ?_) (α := α) (β := β) (R := ?_), ?_⟩
+      <;> sorry
+  | sameColourX L R α β =>
+      sorry
+  | zeroPhaseZ L R =>
+      sorry
+  | zeroPhaseX L R =>
+      sorry
+  | piZ_X L R α =>
+      sorry
+  | piX_Z L R α =>
+      sorry
+  | tripleZXZ L R a b c =>
+      sorry
+  | tripleXZX L R a b c =>
+      sorry
+
+/-- "Small" means at most 3 nodes. -/
+def Small (d : ZxDiagram true true) : Prop :=
+  nodeCount d ≤ 3
+
+/-- A Clifford green/red diagram
+either has at most three spiders, or can be presented in one of the
+four local cases.
+-/
+lemma clifford_greenRed_small_or_case
+    (g : GreenRed)
+    (hC : Clifford (g : ZxDiagram true true)) :
+    nodes g ≤ 3 ∨
+      ∃ c : Case', (c : ZxDiagram true true) = (g : ZxDiagram true true) := by
+  sorry
+
+end GreenRed
+
+private lemma even0 : Even (0 : ZMod 8).val := by decide
+private lemma even2 : Even (2 : ZMod 8).val := by decide
+
+/-- Any Clifford operator can be written as one with only green and red nodes. -/
+lemma green_red_of_Clifford
+    (d : ZxDiagram true true) (hc : Clifford d) :
+  ∃ d' : ZxDiagram true true,
+      Clifford d' ∧ ZxEquiv d d' ∧ IsGreenRed d' := by
+  induction hc with
+  | id =>
+      refine ⟨.Z 0, ?_, ?_, ?_⟩
+      · exact Clifford.Z 0 even0
+      · exact ZxEquiv.symm ZxEquiv.z_id
+      · exact IsGreenRed.Z 0
+  | H =>
+      have h2 : Even (2 : ZMod 8).val := even2
+      refine ⟨.Z 2 ; .X 2 ; .Z 2, ?_, ?_, ?_⟩
+      · exact
+          Clifford.comp
+            (Clifford.comp (Clifford.Z 2 h2) (Clifford.X 2 h2))
+            (Clifford.Z 2 h2)
+      · apply ZxEquiv.trans ZxEquiv.euler_decomp
+        apply ZxEquiv.assoc_comp'
+      · exact
+          IsGreenRed.comp
+            (IsGreenRed.comp (IsGreenRed.Z 2) (IsGreenRed.X 2))
+            (IsGreenRed.Z 2)
+  | Z α hα =>
+      exact ⟨.Z α, Clifford.Z α hα, ZxEquiv.refl _, IsGreenRed.Z α⟩
+  | X β hβ =>
+      exact ⟨.X β, Clifford.X β hβ, ZxEquiv.refl _, IsGreenRed.X β⟩
+  | comp _ _ ih₁ ih₂ =>
+      rcases ih₁ with ⟨d₁', hC₁, hEq₁, hGR₁⟩
+      rcases ih₂ with ⟨d₂', hC₂, hEq₂, hGR₂⟩
+      refine ⟨d₁' ; d₂', Clifford.comp hC₁ hC₂, ?_, IsGreenRed.comp hGR₁ hGR₂⟩
+      exact ZxEquiv.seq_cong hEq₁ hEq₂
+
+/-- Rewrite a syntactic Clifford diagram into the green/red fragment. -/
+def Clifford'.toGreenRed : Clifford' → GreenRed
+  | .id => .Z 0
+  | .H =>
+      have _ : Even (2 : ZMod 8).val := even2
+      .comp (.Z 2) (.comp (.X 2) (.Z 2))
+  | .Z α _ => .Z α
+  | .X β _ => .X β
+  | .comp d₁ d₂ =>
+      .comp (Clifford'.toGreenRed d₁) (Clifford'.toGreenRed d₂)
+
+/-- The image of a syntactic Clifford diagram under `toGreenRed` is green/red. -/
+lemma toGreenRed_isGreenRed (d : Clifford') :
+  IsGreenRed (GreenRed.toZxDiagram (Clifford'.toGreenRed d)) := by
+  induction d with
+  | id =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.Z 0
+  | H =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      have h2 : Even (2 : ZMod 8).val := even2
+      apply IsGreenRed.comp
+      · apply IsGreenRed.Z
+      · apply IsGreenRed.comp
+        · apply IsGreenRed.X
+        · apply IsGreenRed.Z
+  | Z α h =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.Z α
+  | X β h =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.X β
+  | comp d₁ d₂ ih₁ ih₂ =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.comp ih₁ ih₂
+
+/-- Clifford diagrams that are already made only of Z/X spiders. -/
+def IsCliffordGreenRed (d : ZxDiagram true true) : Prop :=
+  Clifford d ∧ IsGreenRed d
 
 /-! ### Local building blocks `W`, `V`, `U` -/
 
@@ -171,7 +433,7 @@ inductive W' : Bool → Bool → Type where
   | X2    : W' true true
   | ZX    : W' true true
 
-/-- Interpret a `W'` diagram as a `ZxDiagram`. -/
+/-- Interpret a `W'` diagram as a `ZxDiagram` -/
 def W'.toZxDiagram : {n m : Bool} → W' n m → ZxDiagram n m
   | false, false, .empty => .empty
   | true,  true,  .X2    => .X 2
@@ -285,101 +547,6 @@ inductive RightForm : ZxDiagram true true → Prop
       Even γ.val → s ∈ ({2, 6} : Finset (ZMod 8)) →
       RightForm (ZxDiagram.comp (ZxDiagram.X γ)
                  (ZxDiagram.comp (ZxDiagram.Z s) (ZxDiagram.X 2)))
-
-/-- Predicate: diagram built only from Z- and X-spiders and composition. -/
-inductive IsGreenRed : ZxDiagram true true → Prop
-  | Z (α : ZMod 8) : IsGreenRed (.Z α)
-  | X (β : ZMod 8) : IsGreenRed (.X β)
-  | comp {d₁ d₂} : IsGreenRed d₁ → IsGreenRed d₂ → IsGreenRed (d₁ ; d₂)
-
-/-- Syntactic fragment containing only green (Z) and red (X) spiders. -/
-inductive GreenRed : Type where
-  | Z (α : ZMod 8) : GreenRed
-  | X (β : ZMod 8) : GreenRed
-  | comp (d₁ : GreenRed) (d₂ : GreenRed) : GreenRed
-
-/-- Interpret a syntactic green/red diagram as a `ZxDiagram`. -/
-def GreenRed.toZxDiagram : GreenRed → ZxDiagram true true
-  | .Z α => .Z α
-  | .X β => .X β
-  | .comp d₁ d₂ => (GreenRed.toZxDiagram d₁) ; (GreenRed.toZxDiagram d₂)
-
-/-- Coercion instance from the green/red fragment to `ZxDiagram`. -/
-instance : Coe GreenRed (ZxDiagram true true) where
-  coe := GreenRed.toZxDiagram
-
-private lemma even0 : Even (0 : ZMod 8).val := by decide
-private lemma even2 : Even (2 : ZMod 8).val := by decide
-
-/-- Any Clifford operator can be written as one with only green and red nodes. -/
-lemma green_red_of_Clifford
-    (d : ZxDiagram true true) (hc : Clifford d) :
-  ∃ d' : ZxDiagram true true,
-      Clifford d' ∧ ZxEquiv d d' ∧ IsGreenRed d' := by
-  induction hc with
-  | id =>
-      refine ⟨.Z 0, ?_, ?_, ?_⟩
-      · exact Clifford.Z 0 even0
-      · exact ZxEquiv.symm ZxEquiv.z_id
-      · exact IsGreenRed.Z 0
-  | H =>
-      have h2 : Even (2 : ZMod 8).val := even2
-      refine ⟨.Z 2 ; .X 2 ; .Z 2, ?_, ?_, ?_⟩
-      · exact
-          Clifford.comp
-            (Clifford.comp (Clifford.Z 2 h2) (Clifford.X 2 h2))
-            (Clifford.Z 2 h2)
-      · apply ZxEquiv.trans ZxEquiv.euler_decomp
-        apply ZxEquiv.assoc_comp'
-      · exact
-          IsGreenRed.comp
-            (IsGreenRed.comp (IsGreenRed.Z 2) (IsGreenRed.X 2))
-            (IsGreenRed.Z 2)
-  | Z α hα =>
-      exact ⟨.Z α, Clifford.Z α hα, ZxEquiv.refl _, IsGreenRed.Z α⟩
-  | X β hβ =>
-      exact ⟨.X β, Clifford.X β hβ, ZxEquiv.refl _, IsGreenRed.X β⟩
-  | comp _ _ ih₁ ih₂ =>
-      rcases ih₁ with ⟨d₁', hC₁, hEq₁, hGR₁⟩
-      rcases ih₂ with ⟨d₂', hC₂, hEq₂, hGR₂⟩
-      refine ⟨d₁' ; d₂', Clifford.comp hC₁ hC₂, ?_, IsGreenRed.comp hGR₁ hGR₂⟩
-      exact ZxEquiv.seq_cong hEq₁ hEq₂
-
-/-- Rewrite a syntactic Clifford diagram into the green/red fragment. -/
-def Clifford'.toGreenRed : Clifford' → GreenRed
-  | .id => .Z 0
-  | .H =>
-      have _ : Even (2 : ZMod 8).val := even2
-      .comp (.Z 2) (.comp (.X 2) (.Z 2))
-  | .Z α _ => .Z α
-  | .X β _ => .X β
-  | .comp d₁ d₂ =>
-      .comp (Clifford'.toGreenRed d₁) (Clifford'.toGreenRed d₂)
-
-/-- The image of a syntactic Clifford diagram under `toGreenRed` is green/red. -/
-lemma toGreenRed_isGreenRed (d : Clifford') :
-  IsGreenRed (GreenRed.toZxDiagram (Clifford'.toGreenRed d)) := by
-  induction d with
-  | id =>
-      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
-      exact IsGreenRed.Z 0
-  | H =>
-      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
-      have h2 : Even (2 : ZMod 8).val := even2
-      apply IsGreenRed.comp
-      · apply IsGreenRed.Z
-      · apply IsGreenRed.comp
-        · apply IsGreenRed.X
-        · apply IsGreenRed.Z
-  | Z α h =>
-      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
-      exact IsGreenRed.Z α
-  | X β h =>
-      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
-      exact IsGreenRed.X β
-  | comp d₁ d₂ ih₁ ih₂ =>
-      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
-      exact IsGreenRed.comp ih₁ ih₂
 
 lemma LeftForm.comp {d₁ d₂ : ZxDiagram true true}
   (h₁ : LeftForm d₁) (h₂ : LeftForm d₂) :
