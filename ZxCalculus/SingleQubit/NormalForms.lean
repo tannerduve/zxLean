@@ -20,9 +20,9 @@ namespace SingleQubit
 
 open ZxDiagram
 
-/-! ### Clifford angles -/
+/-! ### Angle and composition utilities -/
 
-/-- The set `{0, 2, 4, 6} ⊆ ℤ/8ℤ` of even angles (Clifford phases). -/
+/-- The set `{0, 2, 4, 6} ⊆ ℤ/8ℤ` of even angles (Clifford (π/2) phases). -/
 def cliffordAngles : Finset (ZMod 8) := {0, 2, 4, 6}
 
 /-- An angle `a : ℤ/8ℤ` is *Clifford* if its representative is even. -/
@@ -38,8 +38,6 @@ lemma mem_cliffordAngles_of_even (a : ZMod 8) (h : IsCliffordAngle a) :
     a ∈ cliffordAngles := by
   have := even_zmod8_cases a h
   rcases this with rfl | rfl | rfl | rfl <;> simp [cliffordAngles]
-
-/-! ### Boolean-controlled phases and composition utilities -/
 
 /-- Boolean-controlled π phase (0 when `false`, π when `true`). -/
 def boolPiPhase (b : Bool) : ZMod 8 :=
@@ -92,6 +90,65 @@ inductive Clifford : ZxDiagram true true → Prop
   | comp {d₁ d₂} :
       Clifford d₁ → Clifford d₂ → Clifford (d₁ ; d₂)
 
+/-- Syntactic Clifford fragment (1-qubit diagrams with only Clifford gates).
+
+The even-phase side conditions are baked into the constructors, making this
+type convenient for algorithms. The predicate `Clifford`
+is a logical property on `ZxDiagram`s. -/
+inductive Clifford' : Type where
+  | id : Clifford'
+  | H : Clifford'
+  | Z (α : ZMod 8) (h : Even α.val) : Clifford'
+  | X (β : ZMod 8) (h : Even β.val) : Clifford'
+  | comp (d₁ : Clifford') (d₂ : Clifford') : Clifford'
+
+/-- Interpret a syntactic Clifford diagram as a `ZxDiagram`. -/
+def Clifford'.toZxDiagram : Clifford' → ZxDiagram true true
+  | .id => .id
+  | .H => .H
+  | .Z α _ => .Z α
+  | .X β _ => .X β
+  | .comp d₁ d₂ => (Clifford'.toZxDiagram d₁) ; (Clifford'.toZxDiagram d₂)
+
+/-- Coercion instance from the syntactic Clifford fragment to `ZxDiagram`. -/
+instance : Coe (Clifford') (ZxDiagram true true) where
+  coe := Clifford'.toZxDiagram
+
+/-- The coercion image of a Clifford' diagram is Clifford -/
+lemma coe_isClifford (d : Clifford') :
+  Clifford (d : ZxDiagram true true) := by
+  induction d with
+  | id => exact Clifford.id
+  | H => exact Clifford.H
+  | Z α h => exact Clifford.Z α h
+  | X β h => exact Clifford.X β h
+  | comp d₁ d₂ ih₁ ih₂ =>
+      exact Clifford.comp ih₁ ih₂
+
+/-- If a diagram is Clifford it is the image of a Clifford' diagram -/
+lemma exists_Clifford' (d : ZxDiagram true true)
+    (hC : Clifford d) :
+  ∃ d' : Clifford', (d' : ZxDiagram true true) = d := by
+  induction hC with
+  | id =>
+      refine ⟨.id, ?_⟩
+      rfl
+  | H =>
+      refine ⟨.H, ?_⟩
+      rfl
+  | Z α hα =>
+      refine ⟨.Z α hα, ?_⟩
+      rfl
+  | X β hβ =>
+      refine ⟨.X β hβ, ?_⟩
+      rfl
+  | comp h₁ h₂ ih₁ ih₂ =>
+      rcases ih₁ with ⟨d₁', hd₁'⟩
+      rcases ih₂ with ⟨d₂', hd₂'⟩
+      refine ⟨.comp d₁' d₂', ?_⟩
+      rename_i d₁ d₂
+      simp [Clifford'.toZxDiagram, hd₁', hd₂']
+
 /-- Number of Z/X spiders in a single-qubit diagram. -/
 def spiderCount : {n m : Bool} → ZxDiagram n m → ℕ
   | _, _, .id        => 0
@@ -109,13 +166,78 @@ inductive W : {n m : Bool} → ZxDiagram n m → Prop
   | x_two : W (.X 2)
   | z_then_x : W (.comp (.Z 2) (.X 2))
 
+inductive W' : Bool → Bool → Type where
+  | empty : W' false false
+  | X2    : W' true true
+  | ZX    : W' true true
+
+/-- Interpret a `W'` diagram as a `ZxDiagram`. -/
+def W'.toZxDiagram : {n m : Bool} → W' n m → ZxDiagram n m
+  | false, false, .empty => .empty
+  | true,  true,  .X2    => .X 2
+  | true,  true,  .ZX    => .comp (.Z 2) (.X 2)
+
+/-- Coercion from `W'` to `ZxDiagram`. -/
+instance {n m : Bool} : Coe (W' n m) (ZxDiagram n m) where
+  coe := W'.toZxDiagram
+
+/-- The coercion image of a W' diagram is W -/
+lemma coe_isW {n m : Bool} (d : W' n m) :
+  W (d : ZxDiagram n m) := by
+  cases d <;> constructor
+
+/-- If a Zx diagram is W, it is the coercion image of a W' diagram -/
+lemma exists_W' {n m : Bool} (d : ZxDiagram n m)
+    (hW : W d) :
+  ∃ d' : W' n m, (d' : ZxDiagram n m) = d := by
+  cases hW with
+  | empty =>
+      refine ⟨.empty, ?_⟩
+      rfl
+  | x_two =>
+      refine ⟨.X2, ?_⟩
+      rfl
+  | z_then_x =>
+      refine ⟨.ZX, ?_⟩
+      rfl
+
 /-- The `V` component in Backens' normal form. -/
-inductive V : {n m : Bool} → ZxDiagram n m → Prop
+inductive V : ZxDiagram true true → Prop
   | z_one_x_two : V (.comp (.Z 1) (.X 2))
   | z_three_x_two : V (.comp (.Z 3) (.X 2))
 
+inductive V' : Type where
+  | Z1X2 : V'
+  | Z3X2 : V'
+
+/-- Interpret a `V'` diagram as a `ZxDiagram`. -/
+def V'.toZxDiagram : V' → ZxDiagram true true
+  | .Z1X2 => .comp (.Z 1) (.X 2)
+  | .Z3X2 => .comp (.Z 3) (.X 2)
+
+/-- Coercion from `V'` to `ZxDiagram`. -/
+instance : Coe V' (ZxDiagram true true) where
+  coe := V'.toZxDiagram
+
+/-- The coercion image of a V' diagram is V -/
+lemma coe_isV (d : V') :
+  V (d : ZxDiagram true true) := by
+  cases d <;> constructor
+
+/-- If a Zx diagram is V, it is the coercion image of a V' diagram -/
+lemma exists_V' (d : ZxDiagram true true)
+    (hV : V d) :
+  ∃ d' : V', (d' : ZxDiagram true true) = d := by
+  cases hV with
+  | z_one_x_two =>
+      refine ⟨.Z1X2, ?_⟩
+      rfl
+  | z_three_x_two =>
+      refine ⟨.Z3X2, ?_⟩
+      rfl
+
 /-- The `U` component in Backens' normal form. -/
-inductive U : {n m : Bool} → ZxDiagram n m → Prop
+inductive U : ZxDiagram true true → Prop
   | z_then_x (α β : ZMod 8) :
       -- `Z(π/4 + β) ; X(α)` with α, β ∈ {0, π/2, π, -π/2}
       Even α.val → Even β.val →
@@ -124,6 +246,23 @@ inductive U : {n m : Bool} → ZxDiagram n m → Prop
       -- `Z(π/4 + γ) ; X(±π/2) ; Z(π/2)` with γ ∈ {0, π/2, π, -π/2}
       Even γ.val → s ∈ ({2, 6} : Finset (ZMod 8)) →
       U (.comp (.Z (1 + γ)) (.comp (.X s) (.Z 2)))
+
+inductive U' : Type where
+  | Z1Xα : (α : ZMod 8) → Even α.val → U'
+  | Z1Xsz2 : (γ s : ZMod 8) → Even γ.val → s ∈ ({2, 6} : Finset (ZMod 8)) → U'
+
+/-- Interpret a `U'` diagram as a `ZxDiagram`. -/
+def U'.toZxDiagram : U' → ZxDiagram true true
+  | .Z1Xα α _ => .comp (.Z (1 + α)) (.X α)
+  | .Z1Xsz2 γ s _ _ => .comp (.Z (1 + γ)) (.comp (.X s) (.Z 2))
+
+/-- Coercion from `U'` to `ZxDiagram`. -/
+instance : Coe U' (ZxDiagram true true) where
+  coe := U'.toZxDiagram
+
+/-- The coercion image of a U' diagram is U -/
+lemma coe_isU (d : U') :
+  U (d : ZxDiagram true true) := by cases d <;> constructor <;> assumption
 
 /-! ### Left and right Clifford normal forms -/
 
@@ -147,59 +286,100 @@ inductive RightForm : ZxDiagram true true → Prop
       RightForm (ZxDiagram.comp (ZxDiagram.X γ)
                  (ZxDiagram.comp (ZxDiagram.Z s) (ZxDiagram.X 2)))
 
+/-- Predicate: diagram built only from Z- and X-spiders and composition. -/
 inductive IsGreenRed : ZxDiagram true true → Prop
   | Z (α : ZMod 8) : IsGreenRed (.Z α)
   | X (β : ZMod 8) : IsGreenRed (.X β)
   | comp {d₁ d₂} : IsGreenRed d₁ → IsGreenRed d₂ → IsGreenRed (d₁ ; d₂)
 
+/-- Syntactic fragment containing only green (Z) and red (X) spiders. -/
+inductive GreenRed : Type where
+  | Z (α : ZMod 8) : GreenRed
+  | X (β : ZMod 8) : GreenRed
+  | comp (d₁ : GreenRed) (d₂ : GreenRed) : GreenRed
+
+/-- Interpret a syntactic green/red diagram as a `ZxDiagram`. -/
+def GreenRed.toZxDiagram : GreenRed → ZxDiagram true true
+  | .Z α => .Z α
+  | .X β => .X β
+  | .comp d₁ d₂ => (GreenRed.toZxDiagram d₁) ; (GreenRed.toZxDiagram d₂)
+
+/-- Coercion instance from the green/red fragment to `ZxDiagram`. -/
+instance : Coe GreenRed (ZxDiagram true true) where
+  coe := GreenRed.toZxDiagram
+
 private lemma even0 : Even (0 : ZMod 8).val := by decide
 private lemma even2 : Even (2 : ZMod 8).val := by decide
 
-/-- Any clifford operator can be written as one with only green and red nodes -/
-lemma green_red_of_Clifford (d : ZxDiagram true true)
- (hc : Clifford d) : ∃ d' : ZxDiagram true true,
-  Clifford d' ∧ ZxEquiv d d' ∧ IsGreenRed d' := by
+/-- Any Clifford operator can be written as one with only green and red nodes. -/
+lemma green_red_of_Clifford
+    (d : ZxDiagram true true) (hc : Clifford d) :
+  ∃ d' : ZxDiagram true true,
+      Clifford d' ∧ ZxEquiv d d' ∧ IsGreenRed d' := by
   induction hc with
   | id =>
-    use (.Z 0)
-    constructor
-    · apply Clifford.Z
-      simp [Even, ZMod.val]
-      use 0
-    · constructor
-      · apply ZxEquiv.symm
-        apply ZxEquiv.z_id
-      · apply IsGreenRed.Z
+      refine ⟨.Z 0, ?_, ?_, ?_⟩
+      · exact Clifford.Z 0 even0
+      · exact ZxEquiv.symm ZxEquiv.z_id
+      · exact IsGreenRed.Z 0
   | H =>
-    use (.Z 2 ; .X 2 ; .Z 2)
-    constructor
-    · constructor
-      · apply Clifford.comp
-        · apply Clifford.Z
-          simp [Even, ZMod.val]
-          use 1
-        apply Clifford.X
-        simp [Even, ZMod.val]
-        use 1
-      · apply Clifford.Z
-        simp [Even, ZMod.val]
-        use 1
-    · constructor
-      · apply ZxEquiv.trans
-        · apply ZxEquiv.euler_decomp
-        · apply ZxEquiv.assoc_comp'
-      · apply IsGreenRed.comp
-        · apply IsGreenRed.comp
-          · apply IsGreenRed.Z
-          · apply IsGreenRed.X
-        · apply IsGreenRed.Z
-  | Z α hα => refine ⟨.Z α, Clifford.Z α hα, ZxEquiv.refl _, IsGreenRed.Z α⟩
-  | X β hβ => refine ⟨.X β, Clifford.X β hβ, ZxEquiv.refl _, IsGreenRed.X β⟩
-  | comp h₁ h₂ ih₁ ih₂ =>
+      have h2 : Even (2 : ZMod 8).val := even2
+      refine ⟨.Z 2 ; .X 2 ; .Z 2, ?_, ?_, ?_⟩
+      · exact
+          Clifford.comp
+            (Clifford.comp (Clifford.Z 2 h2) (Clifford.X 2 h2))
+            (Clifford.Z 2 h2)
+      · apply ZxEquiv.trans ZxEquiv.euler_decomp
+        apply ZxEquiv.assoc_comp'
+      · exact
+          IsGreenRed.comp
+            (IsGreenRed.comp (IsGreenRed.Z 2) (IsGreenRed.X 2))
+            (IsGreenRed.Z 2)
+  | Z α hα =>
+      exact ⟨.Z α, Clifford.Z α hα, ZxEquiv.refl _, IsGreenRed.Z α⟩
+  | X β hβ =>
+      exact ⟨.X β, Clifford.X β hβ, ZxEquiv.refl _, IsGreenRed.X β⟩
+  | comp _ _ ih₁ ih₂ =>
       rcases ih₁ with ⟨d₁', hC₁, hEq₁, hGR₁⟩
       rcases ih₂ with ⟨d₂', hC₂, hEq₂, hGR₂⟩
       refine ⟨d₁' ; d₂', Clifford.comp hC₁ hC₂, ?_, IsGreenRed.comp hGR₁ hGR₂⟩
       exact ZxEquiv.seq_cong hEq₁ hEq₂
+
+/-- Rewrite a syntactic Clifford diagram into the green/red fragment. -/
+def Clifford'.toGreenRed : Clifford' → GreenRed
+  | .id => .Z 0
+  | .H =>
+      have _ : Even (2 : ZMod 8).val := even2
+      .comp (.Z 2) (.comp (.X 2) (.Z 2))
+  | .Z α _ => .Z α
+  | .X β _ => .X β
+  | .comp d₁ d₂ =>
+      .comp (Clifford'.toGreenRed d₁) (Clifford'.toGreenRed d₂)
+
+/-- The image of a syntactic Clifford diagram under `toGreenRed` is green/red. -/
+lemma toGreenRed_isGreenRed (d : Clifford') :
+  IsGreenRed (GreenRed.toZxDiagram (Clifford'.toGreenRed d)) := by
+  induction d with
+  | id =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.Z 0
+  | H =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      have h2 : Even (2 : ZMod 8).val := even2
+      apply IsGreenRed.comp
+      · apply IsGreenRed.Z
+      · apply IsGreenRed.comp
+        · apply IsGreenRed.X
+        · apply IsGreenRed.Z
+  | Z α h =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.Z α
+  | X β h =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.X β
+  | comp d₁ d₂ ih₁ ih₂ =>
+      simp [Clifford'.toGreenRed, GreenRed.toZxDiagram]
+      exact IsGreenRed.comp ih₁ ih₂
 
 lemma LeftForm.comp {d₁ d₂ : ZxDiagram true true}
   (h₁ : LeftForm d₁) (h₂ : LeftForm d₂) :

@@ -87,7 +87,7 @@ def qubitSpaceEquiv : (n : ℕ) → QubitSpace n ≃ Fin (2^n)
       toFun := fun _ => 0
       invFun := fun _ => ()
       left_inv := fun _ => rfl
-      right_inv := fun i => Fin.eq_of_val_eq (by simp [Fin.val_zero])
+      right_inv := fun i => Fin.eq_of_val_eq (by simp)
     }
   | 1 => Equiv.refl _
   | n + 2 =>
