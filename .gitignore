@@ -1,5 +1,5 @@
 # Aristotle - ignore entire folder and root convenience files
-aristotle/
+sh/
 /prove.sh
 /README_ARISTOTLE.md
 
