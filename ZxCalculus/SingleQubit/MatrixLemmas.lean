@@ -262,7 +262,6 @@ lemma euler_matrix_entries :
   Complex.exp (Complex.I * (2 * ↑Real.pi) / 4)) := by
   field_simp [Complex.ext_iff]
   ring_nf;
-  norm_num [ Complex.exp_re, Complex.exp_im, mul_div ] at *
-  norm_num [ pow_three, Complex.ext_iff, Complex.exp_re, Complex.exp_im, sq ] at *
-
+  norm_num [ Complex.exp_re, Complex.exp_im, mul_div,
+  pow_three, Complex.ext_iff, Complex.exp_re, Complex.exp_im, sq  ] at *
 end Matrix
